@@ -32,6 +32,18 @@ public class IncidentController {
         return "OK";
     }
 
+    @PostMapping("/updatePassengerIncident")
+    public @ResponseBody String updateIncidentStatus(@RequestBody IncidentTO submittedIncident ){
+        Optional<Incident> incident = incidentRepository.findById(submittedIncident.getId());
+        if(incident.isPresent()){
+            incident.get().setStatus(submittedIncident.getStatus());
+            incidentRepository.save(incident.get());
+            return  "OK";
+        }else{
+            return  "NOT_FOUND";
+        }
+    }
+
 
     public Incident transformIncidentTO2Incident(IncidentTO submittedIncident) {
         Incident incident = new Incident();
