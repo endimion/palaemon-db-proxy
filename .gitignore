@@ -31,3 +31,18 @@ build/
 
 ### VS Code ###
 .vscode/
+
+## SECRETS ###
+./keystore.jks
+./keystore_expired.jks
+./keystore_ssl.jks
+./private.key
+./public.key
+./truststore.jks
+./truststore_expired.jks
+./truststore_new.jks
+./truststroe_updated.jks
+./dfb.palaemon.itml.crt
+
+
+
