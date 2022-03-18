@@ -1,0 +1,24 @@
+
+version: '2'
+services:
+  palaemon-db-proxy:
+    image:  endimion13/palaemon-db-proxy:0.0.1a
+    environment:
+      - DFB_URI=dfb.palaemon.itml.gr
+      - DFB_PORT=443
+      - ES_USER=esuser
+      - ES_PASS=kyroCMA2081!
+      - KAFKA_URI_WITH_PORT=dfb.palaemon.itml.gr:30093
+      - KAFKA_TRUST_STORE_LOCATION=/store/truststore.jks
+      - KAFKA_TRUST_STORE_PASSWORD=teststore
+      - KAFKA_KEYSTORE_LOCATION=/store/keystore.jks
+      - KAFKA_KEY_STORE_PASSWORD=teststore
+      - SSL_KEYSTORE_PASS=testpass
+      - SSL_ROOT_CERTIFICATE=/store/dfb.palaemon.itml.crt
+      - OAUTH_ISSUER_URI=https://dss1.aegean.gr/auth/realms/palaemon
+      - PUBLIC_ENCRYPTION_KEY_PATH=/store/public.key
+      - PRIVATE_ENCRYPTION_KEY_PATH=/store/private.key
+    ports:
+      - 8090:8080
+    volumes:
+      - /home/ni/code/java/palaemon-db-proxy/:/store
