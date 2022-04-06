@@ -260,4 +260,13 @@ public class TestElasticIntegration {
 
     }
 
+
+    @Test
+    public void createEvacStatus(){
+        EvacuationStatus status = new EvacuationStatus();
+        status.setStatus("3");
+        elasticService.saveEvacuationStatus(status);
+
+    }
+
 }

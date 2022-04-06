@@ -1,0 +1,119 @@
+version: '3'
+
+services:  
+   redis:
+    image: "redis:alpine"
+    command: redis-server 
+    # volumes:
+    #  - $PWD/redis-data:/var/lib/redis
+    #   - $PWD/redis.conf:/usr/local/etc/redis/redis.conf
+    environment:
+     - REDIS_REPLICATION_MODE=master
+    ports:
+     - "6379:6379"
+
+   kyb:
+    # working u, w, x, 2j, 2l, 2m,  
+    image: endimion13/grids-kyb-custodian:0.0.2p
+    environment:
+      NODE_ENV: "production"
+      ENDPOINT: https://dss.aegean.gr/kyb
+      HTTPS_COOKIES: "false"
+      MEMCACHED_URL: memcached:11211
+      REDIS: redis
+      # BASE_PATH: "issuer"
+      ISSUER_URL: "https://vm.project-grids.eu:8180/auth/realms/grids"
+      OIDC_REDIRECT_URI: "http://kyb-custodian-i4mlab.aegean.gr:5050/login/callback"
+      VC_REDIRECT_URI: "http://kyb-custodian-i4mlab.aegean.gr:5050/vc/response/kyb"
+      USER_INFO: "vm.project-grids.eu"
+      USER_INFO_PORT: "8180"
+      MONGO: "mongodb+srv://root:root@cluster0.vtgm8.mongodb.net/KYB_CUSTODIAN?retryWrites=true&w=majority"
+      TTL: "300"
+      KEYCLOAK_REDIRECT_URI: "https://dss1.aegean.gr/auth/realms/kyb/rest/kybResponse"
+      ISSUE_REDIRECT_URI: "http://kyb-custodian-i4mlab.aegean.gr:5050/vc/response/kyb"
+      JWKS_URI: "http://kyb-custodian-i4mlab.aegean.gr:5050/jwks"
+      CERT_PASS: "pass"
+      LINK_REQ_END: http://vm.project-seal.eu:9050/link/request/submit
+      ISSUE_REDIRECT_URI: http://kyb-custodian-i4mlab.aegean.gr:5050/vc/response/kyb
+    ports:
+      - 5050:5000
+
+
+   palaemon:
+    # working 1d
+    image: endimion13/palaemon-registration:0.0.1f
+    environment:
+      NODE_ENV: "production"
+      ENDPOINT: https://dss.aegean.gr/palaemon
+      HTTPS_COOKIES: "false"
+      REDIS: redis
+      ISSUER_URL: https://dss1.aegean.gr/auth/realms/grnetEidas
+      OIDC_REDIRECT_URI: http://dss.aegean.gr:5040/login/callback
+      VC_REDIRECT_URI: http://localhost:5000/vc/response/kyb
+      PORT: 5000
+      # BASE_PATH: "issuer"
+      DB_PROXY_URL: http://palaemon-db-proxy:8080
+    ports:
+      - 5040:5000
+
+   palaemon-embarkation:
+    image: endimion13/palaemon-embarkation:0.0.1c
+    environment:
+      NODE_ENV: "production"
+      # for SSL: KEY_PATH:
+      # for SSL: CERT_PATH:
+      # for SSL: CERT_PASS:
+      ENDPOINT: "http://dss.aegean.gr:5030"
+      PORT: "5030"
+      REDIS: "redis"
+      EMBARKATION_BACKEND_URI: "http://dss.aegean.gr:5030/addDevice"
+      ISSUER_URL: "https://dss1.aegean.gr/auth/realms/SSI"
+      OIDC_REDIRECT_URI: "http://dss.aegean.gr:5030/login/callback"
+      USER_INFO: "dss1.aegean.gr"
+      USER_INFO_PORT: "8180"
+      # CONNECTION_RESPONSE_URI: http://localhost:5030/connection_response
+      DB_PROXY_URL: "http://palaemon-db-proxy:8080"
+      KEYCLOAK_OAUTH_TOKEN: "https://dss1.aegean.gr/auth/realms/palaemon/protocol/openid-connect/token"
+      KEYCLOAK_OAUTH_CLIENT: "palaemonRegistration"
+      KEYCLOAK_OAUTH_SECRET: "bdbbb8d5-3ee7-4907-b95c-2baae17bd10f"
+    ports:
+      - 5030:5030
+
+
+
+   palaemon-db-proxy:
+    image:  endimion13/palaemon-db-proxy:0.0.1c
+    environment:
+      - DFB_URI=dfb.palaemon.itml.gr
+      - DFB_PORT=443
+      - ES_USER=esuser
+      - ES_PASS=kyroCMA2081!
+      - KAFKA_URI_WITH_PORT=dfb.palaemon.itml.gr:30093
+      - KAFKA_TRUST_STORE_LOCATION=/store/truststore.jks
+      - KAFKA_TRUST_STORE_PASSWORD=teststore
+      - KAFKA_KEYSTORE_LOCATION=/store/keystore.jks
+      - KAFKA_KEY_STORE_PASSWORD=teststore
+      - SSL_KEYSTORE_PASS=testpass
+      - SSL_ROOT_CERTIFICATE=/store/dfb.palaemon.itml.crt
+      - OAUTH_ISSUER_URI=https://dss1.aegean.gr/auth/realms/palaemon
+      - PUBLIC_ENCRYPTION_KEY_PATH=/store/public.key
+      - PRIVATE_ENCRYPTION_KEY_PATH=/store/private.key
+    ports:
+      - 8090:8080
+    volumes:
+      - ./:/store
+
+
+
+
+
+
+   t-oidc:
+    image:  endimion13/grids-kyb-test-client:0.0.1c
+    environment:
+      ISSUER_URL: https://dss1.aegean.gr/auth/realms/kyb
+      OIDC_CLIENT_ID: kompany-3
+      OIDC_CLIENT_SECRET: d5980dda-512b-4986-afa1-90293adb6b59
+      OIDC_REDIRECT_URI: http://dss.aegean.gr:3030/callback
+    ports:
+      - 3030:3000

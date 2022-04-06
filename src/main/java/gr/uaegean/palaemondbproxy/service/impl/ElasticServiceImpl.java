@@ -1,6 +1,8 @@
 package gr.uaegean.palaemondbproxy.service.impl;
 
+import gr.uaegean.palaemondbproxy.model.EvacuationStatus;
 import gr.uaegean.palaemondbproxy.model.PameasPerson;
+import gr.uaegean.palaemondbproxy.repository.EvacuationStatusRepository;
 import gr.uaegean.palaemondbproxy.repository.PameasPersonRepository;
 import gr.uaegean.palaemondbproxy.service.ElasticService;
 import gr.uaegean.palaemondbproxy.utils.CryptoUtils;
@@ -38,6 +40,9 @@ public class ElasticServiceImpl implements ElasticService {
 
     @Autowired
     PameasPersonRepository personRepository;
+
+    @Autowired
+    EvacuationStatusRepository evacuationStatusRepository;
 
     @Autowired
     CryptoUtils cryptoUtils;
@@ -122,7 +127,7 @@ public class ElasticServiceImpl implements ElasticService {
                             } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
                                 log.error(e.getMessage());
                             }
-                            return  pameasPerson;
+                            return pameasPerson;
                         }).collect(Collectors.toList());
 
 
@@ -142,6 +147,22 @@ public class ElasticServiceImpl implements ElasticService {
     @Override
     public void save(PameasPerson person) {
         this.personRepository.save(person);
+    }
+
+    @Override
+    public Optional<EvacuationStatus> getEvacuationStatus() {
+        return evacuationStatusRepository.findStatus().stream().findFirst();
+    }
+
+    @Override
+    public void saveEvacuationStatus(EvacuationStatus evacuationStatus) {
+        Optional<EvacuationStatus> existingStatus = evacuationStatusRepository.findStatus().stream().findFirst();
+        if (existingStatus.isPresent()) {
+            existingStatus.get().setStatus(evacuationStatus.getStatus());
+            evacuationStatusRepository.save(existingStatus.get());
+        } else {
+            evacuationStatusRepository.save(evacuationStatus);
+        }
     }
 }
 

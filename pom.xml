@@ -15,6 +15,7 @@
 	<description>DB Proxy component for palaemon</description>
 	<properties>
 		<java.version>11</java.version>
+		<springfox-swagger.version>3.0.0</springfox-swagger.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -59,6 +60,13 @@
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-clients</artifactId>
 			<version>2.6.0</version>
+		</dependency>
+
+		<!-- swagger -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-ui</artifactId>
+			<version>1.6.4</version>
 		</dependency>
 
 

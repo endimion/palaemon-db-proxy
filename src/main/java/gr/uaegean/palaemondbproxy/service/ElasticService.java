@@ -1,5 +1,6 @@
 package gr.uaegean.palaemondbproxy.service;
 
+import gr.uaegean.palaemondbproxy.model.EvacuationStatus;
 import gr.uaegean.palaemondbproxy.model.PameasPerson;
 
 import java.util.List;
@@ -16,5 +17,7 @@ public interface ElasticService {
     public void save(PameasPerson person);
 
 
+    public Optional<EvacuationStatus> getEvacuationStatus();
+    public void saveEvacuationStatus(EvacuationStatus evacuationStatus);
 
 }
