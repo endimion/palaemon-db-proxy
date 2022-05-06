@@ -1,5 +1,9 @@
 package gr.uaegean.palaemondbproxy;
 
+import gr.uaegean.palaemondbproxy.utils.EnvUtils;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -7,6 +11,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Properties;
 
 public class IntegrationTests {
 
@@ -22,6 +29,57 @@ public class IntegrationTests {
                 .build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         System.out.println(response.body());
+    }
+
+
+
+//    @Test
+    public void testKafkaRead() {
+        Properties properties = new Properties();
+        String trustStoreLocation = EnvUtils.getEnvVar("KAFKA_TRUST_STORE_LOCATION", "/home/ni/code/java/palaemon-db-proxy/truststore.jks");
+        String trustStorePass = EnvUtils.getEnvVar("KAFKA_TRUST_STORE_PASSWORD", "teststore");
+        String keyStoreLocation = EnvUtils.getEnvVar("KAFKA_KEYSTORE_LOCATION", "/home/ni/code/java/palaemon-db-proxy/keystore.jks");
+        String keyStorePass = EnvUtils.getEnvVar("KAFKA_KEY_STORE_PASSWORD", "teststore");
+        String kafkaURI = EnvUtils.getEnvVar("KAFKA_URI_WITH_PORT","dfb.palaemon.itml.gr:30093");
+
+        properties.put("bootstrap.servers", kafkaURI);
+        properties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        properties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        properties.put("security.protocol", "SSL");
+        properties.put("ssl.truststore.location", trustStoreLocation);
+        properties.put("ssl.truststore.password", trustStorePass);
+        properties.put("ssl.keystore.location", keyStoreLocation);
+        properties.put("ssl.keystore.password", keyStorePass);
+
+        properties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        properties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        properties.put("group.id", "uaeg-consumer-group");
+        KafkaConsumer<String, String> consumer = null;
+        try {
+            ArrayList<String> topics = new ArrayList<String>();
+//            topics.add("test-poc");
+//            topics.add("poc-time");
+//            topics.add("smart-bracelet-event-notification");
+//            topics.add("smart-bracelet-sensor-data");
+//            topics.add("smart-bracelet-pameas-evac-msg");
+//            topics.add("srap");
+            topics.add("pameas-notification");
+//            topics.add("pameas-location");
+            consumer = new KafkaConsumer<String, String>(properties);
+            consumer.subscribe(topics);
+            while (true) {
+                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
+                for (ConsumerRecord<String, String> record : records) {
+                    String recordString = record.toString();
+                    System.out.println("Record read in KafkaConsumerApp : " + record.toString());
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Something bad happened : ");
+            e.printStackTrace();
+        } finally {
+            consumer.close();
+        }
 
 
     }

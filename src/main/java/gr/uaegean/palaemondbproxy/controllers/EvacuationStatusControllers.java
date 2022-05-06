@@ -38,7 +38,7 @@ public class EvacuationStatusControllers {
     }
 
     @GetMapping("/getEvacuationStatus")
-    public EvacuationStatus getPersonalInfo(@RequestParam String id) {
+    public EvacuationStatus getPersonalInfo() {
         EvacuationStatus resut = new EvacuationStatus();
         elasticService.getEvacuationStatus().ifPresent(evacuationStatus -> {
             resut.setStatus(evacuationStatus.getStatus());

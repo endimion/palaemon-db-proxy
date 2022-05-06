@@ -16,4 +16,7 @@ public class UpdatePersonStatusTO {
     private boolean inPosition;
     private String musteringStation;
     private String id;
+    private String hashedMacAddress;
+    private String path;
+
 }

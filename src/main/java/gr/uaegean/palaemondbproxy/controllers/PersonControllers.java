@@ -178,11 +178,32 @@ public class PersonControllers {
     }
 
 
+    @PostMapping("/updatePassengerPath")
+    public @ResponseBody
+    String updatePassengerPath(@RequestBody UpdatePersonStatusTO person) {
+        Optional<PameasPerson> existingPerson = elasticService.getPersonByHashedMacAddress(person.getHashedMacAddress());
+        existingPerson.ifPresent(pameasPerson -> pameasPerson.getPersonalInfo().setAssignedPath(person.getPath()));
+        existingPerson.ifPresent(pameasPerson -> elasticService.save(pameasPerson));
+        return "OK";
+    }
+
+
     @PostMapping("/updatePassengerMS")
     public @ResponseBody
     String updatePassengerMS(@RequestBody UpdatePersonStatusTO person) {
-        Optional<PameasPerson> existingPerson = elasticService.getPersonByPersonalIdentifierDecrypted(person.getId());
+        Optional<PameasPerson> existingPerson = elasticService.getPersonByHashedMacAddress(person.getHashedMacAddress());
         existingPerson.ifPresent(pameasPerson -> pameasPerson.getPersonalInfo().setAssignedMusteringStation(person.getMusteringStation()));
+        existingPerson.ifPresent(pameasPerson -> elasticService.save(pameasPerson));
+        return "OK";
+    }
+
+
+    @PostMapping("/updateCrewInPosition")
+    public @ResponseBody
+    String updateCrewInPosition(@RequestBody UpdatePersonStatusTO person) {
+        Optional<PameasPerson> existingPerson = elasticService.getPersonByHashedMacAddress(person.getHashedMacAddress());
+        existingPerson.ifPresent(pameasPerson -> pameasPerson.
+                getPersonalInfo().setInPosition(person.isInPosition()));
         existingPerson.ifPresent(pameasPerson -> elasticService.save(pameasPerson));
         return "OK";
     }

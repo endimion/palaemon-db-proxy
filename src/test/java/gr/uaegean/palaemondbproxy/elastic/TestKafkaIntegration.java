@@ -1,6 +1,7 @@
 package gr.uaegean.palaemondbproxy.elastic;
 
 import gr.uaegean.palaemondbproxy.model.*;
+import gr.uaegean.palaemondbproxy.model.TO.PameasNotificationTO;
 import gr.uaegean.palaemondbproxy.model.location.UserGeofenceUnit;
 import gr.uaegean.palaemondbproxy.model.location.UserLocationUnit;
 import gr.uaegean.palaemondbproxy.service.KafkaService;
@@ -102,6 +103,17 @@ public class TestKafkaIntegration {
         kafkaService.savePerson(p);
 
     }
+
+    @Test
+    public void testKafkaServiceNotification() {
+        PameasNotificationTO pameasNotificationTO = new PameasNotificationTO();
+        pameasNotificationTO.setId("id");
+        pameasNotificationTO.setGeofence("geo1");
+        pameasNotificationTO.setMacAddress("asdfsa");
+
+        kafkaService.writePameasNotification(pameasNotificationTO);
+    }
+
 
 
 }

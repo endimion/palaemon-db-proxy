@@ -12,4 +12,5 @@ public class MinGeofenceUnitTO {
     private String gfId;
     private String gfName;
     private String timestamp;
+    private String deck;
 }

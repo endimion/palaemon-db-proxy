@@ -1,5 +1,6 @@
 package gr.uaegean.palaemondbproxy.model.TO;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import gr.uaegean.palaemondbproxy.model.Geofence;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -20,5 +21,6 @@ public class GeofenceTO implements Serializable {
     private String gfName;
     private String deck;
     private Geofence.GeofenceStatusEnum status;
+    @JsonProperty("mustering")
     private boolean isMusteringStation;
 }

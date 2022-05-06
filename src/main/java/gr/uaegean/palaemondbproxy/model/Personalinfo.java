@@ -80,10 +80,12 @@ public class Personalinfo implements Serializable {
     @Field(type = Text)
     private String assignedMusteringStation;
 
+    @Field(type = Text)
+    private String assignedPath;
 
     public enum AssignmentStatus {
         ASSIGNED("ASSIGNED"),
-        FREE("ASSIGNED");
+        FREE("UNASSIGNED");
         private final String name;
         private AssignmentStatus(String s) {
             name = s;

@@ -34,5 +34,7 @@ public class UserGeofenceUnit implements Serializable { //like location
     private String hashedMacAddress;
     @Field(type = Text)
     private String timestamp;
+    @Field(type = Text)
+    private String deck;
 
 }

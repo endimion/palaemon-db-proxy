@@ -4,27 +4,18 @@ import gr.uaegean.palaemondbproxy.utils.EnvUtils;
 import gr.uaegean.palaemondbproxy.utils.KafkaJsonSerializer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.elasticsearch.client.ClientConfiguration;
-import org.springframework.data.elasticsearch.client.RestClients;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
-import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
-import org.springframework.util.StringUtils;
 
-import javax.net.ssl.SSLContext;
 import java.util.Properties;
 
 @Configuration
-public class KafkaConfig {
+public class KafkaProducerConfig {
     //TODO read these from .env
     private final Properties properties = new Properties();
 
 
-    public KafkaConfig() {
+    public KafkaProducerConfig() {
         String kafkaURI = EnvUtils.getEnvVar("KAFKA_URI_WITH_PORT","dfb.palaemon.itml.gr:30093");
 
 //                StringUtils.isEmpty(System.getenv("KAFKA_URI"))?"dfb.palaemon.itml.gr:30093":System.getenv("KAFKA_URI");

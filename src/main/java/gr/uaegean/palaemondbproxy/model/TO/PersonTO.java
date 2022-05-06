@@ -47,6 +47,9 @@ public class PersonTO {
       emergency_duty: 'firefighting_unit',
 
       preferred_language: [ 'IE' ],
+      in_position: false,
+      assignment_status: "UNASSIGNED",
+      assigned_muster_station: null
 
     }
 
@@ -81,7 +84,7 @@ public class PersonTO {
     private String mobilityIssues;
     @JsonProperty("pregnency_data")
     private String prengencyData;
-
+    @JsonProperty("is_crew")
     private boolean isCrew;
     private String role;
     @JsonProperty("emergency_duty")

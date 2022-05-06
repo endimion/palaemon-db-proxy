@@ -20,6 +20,7 @@ public class LocationUtils {
         geofenceUnitTO.setTimestamp(location.getGeofence().getTimestamp());
         geofenceUnitTO.setGfId(location.getGeofence().getGfId());
         geofenceUnitTO.setGfName(location.getGeofence().getGfName());
+        geofenceUnitTO.setDeck(location.getGeofence().getDeck());
 
         minLocationTO.setGeofence(geofenceUnitTO);
 

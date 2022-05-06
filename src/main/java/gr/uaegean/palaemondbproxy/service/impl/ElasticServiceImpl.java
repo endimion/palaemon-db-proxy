@@ -156,13 +156,19 @@ public class ElasticServiceImpl implements ElasticService {
 
     @Override
     public void saveEvacuationStatus(EvacuationStatus evacuationStatus) {
-        Optional<EvacuationStatus> existingStatus = evacuationStatusRepository.findStatus().stream().findFirst();
-        if (existingStatus.isPresent()) {
-            existingStatus.get().setStatus(evacuationStatus.getStatus());
-            evacuationStatusRepository.save(existingStatus.get());
-        } else {
+        try{
+            Optional<EvacuationStatus> existingStatus = evacuationStatusRepository.findStatus().stream().findFirst();
+            if (existingStatus.isPresent()) {
+                existingStatus.get().setStatus(evacuationStatus.getStatus());
+                evacuationStatusRepository.save(existingStatus.get());
+            } else {
+                evacuationStatusRepository.save(evacuationStatus);
+            }
+        }catch (Exception e){
+            log.error(e.getMessage());
             evacuationStatusRepository.save(evacuationStatus);
         }
+
     }
 }
 

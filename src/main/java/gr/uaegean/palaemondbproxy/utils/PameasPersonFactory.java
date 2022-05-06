@@ -49,8 +49,7 @@ public class PameasPersonFactory {
         pii.setRole(receivedPerson.getRole());
         pii.setEmergencyDuty(receivedPerson.getEmergencyDuty());
         pii.setDutyScheduleList(receivedPerson.getDutySchedule());
-
-
+        pii.setAssignedMusteringStation(receivedPerson.getAssignedMusteringStation());
         p.setPersonalInfo(pii);
 
         NetworkInfo networkInfo = new NetworkInfo();

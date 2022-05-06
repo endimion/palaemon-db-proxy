@@ -1,5 +1,7 @@
 package gr.uaegean.palaemondbproxy.elastic;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.uaegean.palaemondbproxy.model.*;
 import gr.uaegean.palaemondbproxy.model.location.UserGeofenceUnit;
 import gr.uaegean.palaemondbproxy.model.location.UserLocationUnit;
@@ -58,7 +60,7 @@ public class TestElasticIntegration {
 
 
     @Test
-    public void addPameasPersonPassenger() throws NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
+    public void addPameasPersonPassenger() throws NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException, JsonProcessingException {
         TicketInfo ticketInfo = new TicketInfo();
         ticketInfo.setGender("F");
         ticketInfo.setSurname(cryptoUtils.encryptBase64("Triantafyllou"));
@@ -121,6 +123,9 @@ public class TestElasticIntegration {
         locationInfo.setGeofenceHistory(asList(g));
 
         p.setLocationInfo(locationInfo);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        System.out.println(objectMapper.writeValueAsString(p));
 
         personRepository.save(p);
 

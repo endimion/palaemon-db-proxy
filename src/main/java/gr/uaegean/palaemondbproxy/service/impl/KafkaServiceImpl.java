@@ -3,6 +3,7 @@ package gr.uaegean.palaemondbproxy.service.impl;
 import gr.uaegean.palaemondbproxy.model.PameasPerson;
 import gr.uaegean.palaemondbproxy.model.TO.LocationTO;
 import gr.uaegean.palaemondbproxy.model.TO.MinLocationTO;
+import gr.uaegean.palaemondbproxy.model.TO.PameasNotificationTO;
 import gr.uaegean.palaemondbproxy.service.KafkaService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -19,11 +20,14 @@ public class KafkaServiceImpl implements KafkaService {
     private final KafkaProducer<String, PameasPerson> personProducer;
     private final KafkaProducer<String, MinLocationTO> locationProducer;
 
+    private final KafkaProducer<String, PameasNotificationTO> notificationProducer;
+
 
     @Autowired
-    public KafkaServiceImpl(KafkaProducer<String, PameasPerson> producer, KafkaProducer<String, MinLocationTO> locationProducer) {
+    public KafkaServiceImpl(KafkaProducer<String, PameasPerson> producer, KafkaProducer<String, MinLocationTO> locationProducer, KafkaProducer<String, PameasNotificationTO> notificationProducer) {
         this.personProducer = producer;
         this.locationProducer = locationProducer;
+        this.notificationProducer = notificationProducer;
     }
 
     @Override
@@ -44,6 +48,16 @@ public class KafkaServiceImpl implements KafkaService {
             log.info("pushing to  kafka {}", location);
 
             this.locationProducer.send(new ProducerRecord<>(LOCATION_TOPIC, location));
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    @Override
+    public void writePameasNotification(PameasNotificationTO notification) {
+        try {
+            log.info("pushing to  kafka {}", notification);
+            this.notificationProducer.send(new ProducerRecord<>("pameas-notification", notification));
         } catch (Exception e) {
             log.error(e.getMessage());
         }
