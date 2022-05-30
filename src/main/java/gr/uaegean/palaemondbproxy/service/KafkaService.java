@@ -16,4 +16,9 @@ public interface KafkaService {
 
     public void writePameasNotification(PameasNotificationTO notification);
 
+    public void monitorEvacuationCoordinator(String message);
+    public void monitorHeartbeat(String message);
+
+    public void monitorResourceDiscover(String message);
+
 }
