@@ -8,6 +8,7 @@ import gr.uaegean.palaemondbproxy.model.PameasPerson;
 import gr.uaegean.palaemondbproxy.model.TO.LocationTO;
 import gr.uaegean.palaemondbproxy.service.ElasticService;
 import gr.uaegean.palaemondbproxy.service.PersonService;
+import gr.uaegean.palaemondbproxy.service.SpeedService;
 import gr.uaegean.palaemondbproxy.utils.CryptoUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,10 @@ public class PersonServiceImpl implements PersonService {
 
     @Autowired
     private CryptoUtils cryptoUtils;
+
+    @Autowired
+    SpeedService speedService;
+
 
     @Override
     public void addDeviceToPerson(String personalIdentifier, DeviceInfo device, String clientId) {
@@ -76,6 +81,14 @@ public class PersonServiceImpl implements PersonService {
             person.getLocationInfo().getGeofenceHistory().add(location.getGeofence());
             try {
                 String decryptedPersonaId = cryptoUtils.decryptBase64Message(person.getPersonalInfo().getPersonalId());
+
+                double speed = speedService.updatePersonSpeed(location);
+                if(speed >0){
+                    person.getLocationInfo().setSpeed(String.valueOf(speed));
+                }else{
+                    log.error("error calculating speed {}", speed);
+                }
+
                 this.elasticService.updatePerson(decryptedPersonaId, person);
 
             } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
@@ -99,6 +112,23 @@ public class PersonServiceImpl implements PersonService {
             elasticService.updatePerson(personalIdentifier, existingPerson.get());
         } else {
             log.info("could not find user with PersonalIdentifier  {}", personalIdentifier);
+        }
+    }
+
+    @Override
+    public void updateOxygenSaturation(String braceletId, String saturation) {
+        Optional<PameasPerson> existingPerson = this.elasticService.getPersonByBraceletId(braceletId);
+        if (existingPerson.isPresent()) {
+            existingPerson.get().getPersonalInfo().setOxygenSaturation(saturation);
+            try {
+                String decryptedPersonaId = cryptoUtils.decryptBase64Message(existingPerson.get().getPersonalInfo().getPersonalId());
+                elasticService.updatePerson(decryptedPersonaId, existingPerson.get());
+            } catch (NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException |
+                     NoSuchAlgorithmException e) {
+                log.error(e.getMessage());
+            }
+
+
         }
     }
 }

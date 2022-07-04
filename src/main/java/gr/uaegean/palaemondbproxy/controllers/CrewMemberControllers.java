@@ -85,6 +85,7 @@ public class CrewMemberControllers {
             crewMembers.get().getPersonalInfo().setInPosition(newStatus.isInPosition());
             crewMembers.get().getPersonalInfo().setAssignmentStatus(newStatus.getAssignmentStatus());
             crewMembers.get().getPersonalInfo().setAssignedMusteringStation(newStatus.getMusteringStation());
+            log.info("will save {}", crewMembers.get());
             personRepository.save(crewMembers.get());
         } else {
             return "ERROR";

@@ -21,4 +21,9 @@ public interface KafkaService {
 
     public void monitorResourceDiscover(String message);
 
+    public void monitorBraceletSaturation(String message);
+
+    public void monitorBraceletFallEvent(String message);
+
+
 }

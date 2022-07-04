@@ -83,9 +83,15 @@ public class Personalinfo implements Serializable {
     @Field(type = Text)
     private String assignedPath;
 
+    @Field(type = Text)
+    private String oxygenSaturation;
+
+    @Field(type = Text)
+    private String hasFallen;
+
     public enum AssignmentStatus {
         ASSIGNED("ASSIGNED"),
-        FREE("UNASSIGNED");
+        UNASSIGNED("UNASSIGNED");
         private final String name;
         private AssignmentStatus(String s) {
             name = s;

@@ -20,4 +20,6 @@ public interface ElasticService {
     public Optional<EvacuationStatus> getEvacuationStatus();
     public void saveEvacuationStatus(EvacuationStatus evacuationStatus);
 
+    public Optional<PameasPerson> getPersonByBraceletId(String braceletId);
+
 }

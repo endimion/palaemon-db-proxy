@@ -9,6 +9,8 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 import java.io.Serializable;
 import java.util.List;
 
+import static org.springframework.data.elasticsearch.annotations.FieldType.Text;
+
 @Getter
 @Setter
 @ToString
@@ -19,4 +21,6 @@ public class LocationInfo  implements Serializable {
     private List<UserGeofenceUnit> geofenceHistory;
     @Field(type = FieldType.Nested, includeInParent = true)
     private List<UserLocationUnit> locationHistory;
+    @Field(type = Text)
+    private String speed;
 }

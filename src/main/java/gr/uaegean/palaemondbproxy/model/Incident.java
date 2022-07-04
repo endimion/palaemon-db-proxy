@@ -46,11 +46,14 @@ public class Incident implements Serializable {
     private String timestamp;
     @Field(type = Text)
     private IncidentStatus status;
+    @Field(type = Text)
+    private String incidentId;
 
 
     public enum IncidentStatus {
         OPEN("OPEN"),
-        CLOSED("CLOSED");
+        CLOSED("CLOSED"),
+        ASSIGNED("ASSIGNED");
         private final String name;
         private IncidentStatus(String s) {
             name = s;

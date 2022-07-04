@@ -100,6 +100,21 @@ public class ElasticServiceImpl implements ElasticService {
     }
 
 
+    @Override
+    public Optional<PameasPerson> getPersonByBraceletId(String braceletId) {
+        String date = DateTimeFormatter.ofPattern("yyyy.MM.dd").format(LocalDate.now());
+        Query searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(matchQuery("networkInfo.braceletId", braceletId).minimumShouldMatch("100%"))
+                .build();
+        SearchHits<PameasPerson> matchingPersons =
+                this.elasticsearchTemplate.search(searchQuery, PameasPerson.class, IndexCoordinates.of("pameas-person-" + date));
+        if (matchingPersons.getTotalHits() > 0) {
+            return Optional.of(matchingPersons.getSearchHit(0).getContent());
+        }
+        return Optional.empty();
+    }
+
+
     // personalIdentifier in plain text,
     @Override
     public List<PameasPerson> getAllPersonsDecrypted() {

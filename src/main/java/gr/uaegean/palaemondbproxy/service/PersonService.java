@@ -10,5 +10,7 @@ public interface PersonService {
     public void addLocationToPerson(LocationTO location);
     public void deleteDeviceFromPerson(String personalIdentifier, DeviceInfo device);
 
+    public void updateOxygenSaturation(String hashedMacAddress, String saturation);
+
 }
 

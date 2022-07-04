@@ -22,5 +22,11 @@ public class NetworkInfo  implements Serializable {
     @Field(type = Text)
     private String messagingAppClientId;
 
+    @Field(type = Text)
+    private String arGlassesId;
+
+    @Field(type = Text)
+    private String braceletId;
+
 
 }

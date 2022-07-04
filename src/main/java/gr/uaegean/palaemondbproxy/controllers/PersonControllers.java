@@ -1,5 +1,8 @@
 package gr.uaegean.palaemondbproxy.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.uaegean.palaemondbproxy.model.Geofence;
 import gr.uaegean.palaemondbproxy.model.PameasPerson;
 import gr.uaegean.palaemondbproxy.model.Personalinfo;
@@ -54,7 +57,8 @@ public class PersonControllers {
                         connectedPersonTO.setName(cryptoUtils.encryptBase64(connectedPersonTO.getName()));
                         connectedPersonTO.setSurname(cryptoUtils.encryptBase64(connectedPersonTO.getSurname()));
 
-                    } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+                    } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                             IllegalBlockSizeException | BadPaddingException e) {
                         log.error("Error in encrypting person ");
                         log.error(e.getMessage());
                     }
@@ -62,7 +66,8 @@ public class PersonControllers {
             }
 
 
-        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException |
+                 BadPaddingException e) {
             log.error("Error in encrypting person ");
             log.error(e.getMessage());
         }
@@ -72,6 +77,41 @@ public class PersonControllers {
 //        elasticService.save(wrappedPerson);
 
     }
+
+
+    @PostMapping("/addPerson2ES")
+    public void addPerson2ES(@RequestBody PersonFullTO person) {
+        try {
+            person.setName(cryptoUtils.encryptBase64(person.getName()));
+            person.setSurname(cryptoUtils.encryptBase64(person.getSurname()));
+            person.setIdentifier(cryptoUtils.encryptBase64(person.getIdentifier()));
+            if (person.getConnectedPassengers() != null) {
+                person.getConnectedPassengers().forEach(connectedPersonTO -> {
+                    try {
+                        connectedPersonTO.setName(cryptoUtils.encryptBase64(connectedPersonTO.getName()));
+                        connectedPersonTO.setSurname(cryptoUtils.encryptBase64(connectedPersonTO.getSurname()));
+
+                    } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                             IllegalBlockSizeException | BadPaddingException e) {
+                        log.error("Error in encrypting person ");
+                        log.error(e.getMessage());
+                    }
+                });
+            }
+
+
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException |
+                 BadPaddingException e) {
+            log.error("Error in encrypting person ");
+            log.error(e.getMessage());
+        }
+        PameasPerson wrappedPerson = PameasPersonFactory.getFromPersonFullTO(person);
+//        log.info(wrappedPerson.toString());
+        kafkaService.savePerson(wrappedPerson);
+//        elasticService.save(wrappedPerson);
+
+    }
+
 
     @GetMapping("/getPerson")
     public PameasPerson getPersonalInfo(@RequestParam String id) {
@@ -94,14 +134,16 @@ public class PersonControllers {
                         ticketInfo.setName(cryptoUtils.decryptBase64Message(ticketInfo.getName()));
                         ticketInfo.setSurname(cryptoUtils.decryptBase64Message(ticketInfo.getSurname()));
                         return ticketInfo;
-                    } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+                    } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                             IllegalBlockSizeException | BadPaddingException e) {
                         log.error("ERROR decrypting TicketInfo details");
                         log.error(e.getMessage());
                         return null;
                     }
                 }).collect(Collectors.toList()));
 
-            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                     IllegalBlockSizeException | BadPaddingException e) {
                 log.error("ERROR decrypting person details");
                 log.error(e.getMessage());
             }
@@ -206,6 +248,28 @@ public class PersonControllers {
                 getPersonalInfo().setInPosition(person.isInPosition()));
         existingPerson.ifPresent(pameasPerson -> elasticService.save(pameasPerson));
         return "OK";
+    }
+
+
+    @PostMapping("/updateSaturation")
+    public @ResponseBody
+    String monitorBraceletSaturation(BraceletDataTO braceletDataTO) {
+
+        Optional<PameasPerson> person = elasticService.getPersonByBraceletId(braceletDataTO.getId());
+        try {
+            if (person.isPresent()) {
+                person.get().getPersonalInfo().setOxygenSaturation(braceletDataTO.getSp02());
+                String decryptedPersonaId = this.cryptoUtils.decryptBase64Message(person.get().getPersonalInfo().getPersonalId());
+                elasticService.updatePerson("", person.get());
+                return  "OK";
+            } else {
+                log.error("no person found with bracelet {}", braceletDataTO.getId());
+            }
+        } catch (InvalidKeyException | BadPaddingException | NoSuchAlgorithmException |
+                 IllegalBlockSizeException | NoSuchPaddingException e) {
+            log.error(e.getMessage());
+        }
+        return  "ERROR";
     }
 
 

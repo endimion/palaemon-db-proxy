@@ -7,12 +7,10 @@ import gr.uaegean.palaemondbproxy.model.TO.IncidentTO;
 import gr.uaegean.palaemondbproxy.repository.IncidentRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
+import java.sql.Wrapper;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,15 +31,41 @@ public class IncidentController {
     }
 
     @PostMapping("/updatePassengerIncident")
-    public @ResponseBody String updateIncidentStatus(@RequestBody IncidentTO submittedIncident ){
+    public @ResponseBody String updateIncidentStatus(@RequestBody IncidentTO submittedIncident) {
         Optional<Incident> incident = incidentRepository.findById(submittedIncident.getId());
-        if(incident.isPresent()){
+        if (incident.isPresent()) {
             incident.get().setStatus(submittedIncident.getStatus());
             incidentRepository.save(incident.get());
-            return  "OK";
-        }else{
-            return  "NOT_FOUND";
+            return "OK";
+        } else {
+            return "NOT_FOUND";
         }
+    }
+
+
+    @GetMapping("/getPassengerIncident")
+    public @ResponseBody IncidentTO getPassengerIncident(@RequestParam String id) {
+        Optional<Incident> incident = incidentRepository.findByIncidentId(id);
+        IncidentTO result = new IncidentTO();
+        if (incident.isPresent()) {
+            result.setGeofence(incident.get().getGeofenceId());
+            result.setPassengerName(incident.get().getPassengerName());
+            result.setPassengerSurname(incident.get().getPassengerSurname());
+            result.setDeck(incident.get().getDeck());
+            result.setId(incident.get().getId());
+            result.setHealthIssues(incident.get().getHealthIssues());
+            result.setStatus(incident.get().getStatus());
+            result.setTimestamp(incident.get().getTimestamp());
+            result.setMobilityIssues(incident.get().getMobilityIssues());
+            result.setAssignedCrewMemberId(incident.get().getAssignedCrewMemberIdDecrypted());
+            result.setPregnancyStatus(incident.get().getPregnancyStatus());
+            result.setXLoc(incident.get().getXLoc());
+            result.setYLoc(incident.get().getYLoc());
+            result.setPreferredLanguage(incident.get().getPreferredLanguage());
+            result.setIncidentId(incident.get().getIncidentId());
+            return result;
+        }
+        return null;
     }
 
 
@@ -63,6 +87,7 @@ public class IncidentController {
         incident.setAssignedCrewMemberIdDecrypted(submittedIncident.getAssignedCrewMemberId());
         incident.setGeofenceId(submittedIncident.getGeofence());
         incident.setStatus(Incident.IncidentStatus.OPEN);
+        incident.setIncidentId(submittedIncident.getIncidentId());
         return incident;
     }
 }

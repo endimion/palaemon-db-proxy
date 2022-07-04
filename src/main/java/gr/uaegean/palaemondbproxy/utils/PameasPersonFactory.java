@@ -2,6 +2,7 @@ package gr.uaegean.palaemondbproxy.utils;
 
 import gr.uaegean.palaemondbproxy.model.*;
 import gr.uaegean.palaemondbproxy.model.TO.ConnectedPersonTO;
+import gr.uaegean.palaemondbproxy.model.TO.PersonFullTO;
 import gr.uaegean.palaemondbproxy.model.TO.PersonTO;
 
 import java.util.ArrayList;
@@ -58,6 +59,61 @@ public class PameasPersonFactory {
         LocationInfo locationInfo = new LocationInfo();
         locationInfo.setLocationHistory(new ArrayList<>());
         locationInfo.setGeofenceHistory(new ArrayList<>());
+        p.setLocationInfo(locationInfo);
+
+        p.getLocationInfo().setSpeed("");
+
+        return p;
+    }
+
+    public static PameasPerson getFromPersonFullTO(PersonFullTO receivedPerson) {
+        PameasPerson p = new PameasPerson();
+        Personalinfo pii = new Personalinfo();
+        pii.setPersonalId(receivedPerson.getIdentifier());
+        pii.setSurname(receivedPerson.getSurname());
+        pii.setName(receivedPerson.getName());
+        pii.setGender(receivedPerson.getGender());
+
+        pii.setTicketNumber(receivedPerson.getTicketNumber());
+        List<TicketInfo> receivedLinkedTickets =
+                receivedPerson.getConnectedPassengers() != null ?
+                        receivedPerson.getConnectedPassengers().stream().map(pass -> {
+                            TicketInfo ti = new TicketInfo();
+                            ti.setTicketNumber(pass.getTicketNumber());
+                            ti.setGender(pass.getGender());
+                            ti.setName(pass.getName());
+                            ti.setSurname(pass.getSurname());
+                            ti.setDateOfBirth(pass.getAge());
+                            return ti;
+                        }).collect(Collectors.toList()) : new ArrayList<>();
+
+        pii.setTicketInfo(receivedLinkedTickets);
+        pii.setDateOfBirth(receivedPerson.getAge());
+        pii.setEmbarkationPort(receivedPerson.getEmbarkationPort());
+        pii.setDisembarkationPort(receivedPerson.getDisembarkationPort());
+        pii.setEmail(receivedPerson.getEmail());
+        pii.setCountryOfResidence(receivedPerson.getCountryOfResidence());
+        pii.setPreferredLanguage(Arrays.asList(receivedPerson.getPreferredLanguage()));
+        pii.setMedicalCondition(receivedPerson.getMedicalCondition());
+        pii.setMobilityIssues(receivedPerson.getMobilityIssues());
+        pii.setPrengencyData(receivedPerson.getPrengencyData());
+        pii.setEmergencyContact(receivedPerson.getEmergencyContact());
+
+        pii.setCrew(receivedPerson.isCrew());
+        pii.setRole(receivedPerson.getRole());
+        pii.setEmergencyDuty(receivedPerson.getEmergencyDuty());
+        pii.setDutyScheduleList(receivedPerson.getDutySchedule());
+        pii.setAssignedMusteringStation(receivedPerson.getAssignedMusteringStation());
+        p.setPersonalInfo(pii);
+
+        NetworkInfo networkInfo = new NetworkInfo();
+        networkInfo.setDeviceInfoList(receivedPerson.getDeviceInfoList());
+        p.setNetworkInfo(networkInfo);
+        networkInfo.setMessagingAppClientId(receivedPerson.getMessagingAppClientId());
+
+        LocationInfo locationInfo = new LocationInfo();
+        locationInfo.setLocationHistory(receivedPerson.getLocationHistory());
+        locationInfo.setGeofenceHistory(receivedPerson.getGeofenceHistory());
         p.setLocationInfo(locationInfo);
 
         return p;

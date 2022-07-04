@@ -193,7 +193,7 @@ public class TestElasticIntegration {
         crewMemberDuties.add(schedule);
         pii.setDutyScheduleList(crewMemberDuties);
 
-        pii.setAssignmentStatus(Personalinfo.AssignmentStatus.FREE);
+        pii.setAssignmentStatus(Personalinfo.AssignmentStatus.UNASSIGNED);
         pii.setAssignedMusteringStation("geofence1");
         pii.setInPosition(true);
 

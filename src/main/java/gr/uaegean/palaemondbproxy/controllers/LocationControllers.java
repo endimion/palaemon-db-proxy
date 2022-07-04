@@ -6,6 +6,7 @@ import gr.uaegean.palaemondbproxy.model.location.UserGeofenceUnit;
 import gr.uaegean.palaemondbproxy.model.location.UserLocationUnit;
 import gr.uaegean.palaemondbproxy.service.KafkaService;
 import gr.uaegean.palaemondbproxy.service.PersonService;
+import gr.uaegean.palaemondbproxy.service.SpeedService;
 import gr.uaegean.palaemondbproxy.utils.LocationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ public class LocationControllers {
 
     @Autowired
     PersonService personService;
+
 
     @PostMapping("/addLocation")
     public void pushLocation(@RequestBody LocationTO location){

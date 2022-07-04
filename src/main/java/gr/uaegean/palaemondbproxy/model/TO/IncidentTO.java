@@ -29,4 +29,5 @@ public class IncidentTO {
     private String deck;
     private String timestamp;
     private Incident.IncidentStatus status;
+    private String incidentId;
 }
