@@ -104,4 +104,7 @@ public class PersonTO {
     @JsonProperty("assigned_muster_station")
     private String assignedMusteringStation;
 
+    private String heartBeat;
+    private String saturation;
+
 }

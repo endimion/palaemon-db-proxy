@@ -16,6 +16,7 @@ import gr.uaegean.palaemondbproxy.service.KafkaService;
 import gr.uaegean.palaemondbproxy.utils.CryptoUtils;
 import gr.uaegean.palaemondbproxy.utils.PameasPersonFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +25,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -107,9 +109,41 @@ public class PersonControllers {
         }
         PameasPerson wrappedPerson = PameasPersonFactory.getFromPersonFullTO(person);
 //        log.info(wrappedPerson.toString());
-        kafkaService.savePerson(wrappedPerson);
-//        elasticService.save(wrappedPerson);
+//        kafkaService.savePerson(wrappedPerson);
+        elasticService.save(wrappedPerson);
 
+    }
+
+
+    @PostMapping("/addPerson2ESBulk")
+    public void addPerson2ESBulk(@RequestBody List<PersonFullTO> persons) {
+        persons.stream().forEach(person -> {
+            try {
+                person.setName(cryptoUtils.encryptBase64(person.getName()));
+                person.setSurname(cryptoUtils.encryptBase64(person.getSurname()));
+                person.setIdentifier(cryptoUtils.encryptBase64(person.getIdentifier()));
+                if (person.getConnectedPassengers() != null) {
+                    person.getConnectedPassengers().forEach(connectedPersonTO -> {
+                        try {
+                            connectedPersonTO.setName(cryptoUtils.encryptBase64(connectedPersonTO.getName()));
+                            connectedPersonTO.setSurname(cryptoUtils.encryptBase64(connectedPersonTO.getSurname()));
+
+                        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                                 IllegalBlockSizeException | BadPaddingException e) {
+                            log.error("Error in encrypting person ");
+                            log.error(e.getMessage());
+                        }
+                    });
+                }
+            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                     IllegalBlockSizeException |
+                     BadPaddingException e) {
+                log.error("Error in encrypting person ");
+                log.error(e.getMessage());
+            }
+            PameasPerson wrappedPerson = PameasPersonFactory.getFromPersonFullTO(person);
+            elasticService.save(wrappedPerson);
+        });
     }
 
 
@@ -160,8 +194,62 @@ public class PersonControllers {
     @GetMapping("/getPassengers")
     public @ResponseBody
     List<PameasPerson> getAllPassengerInfo() {
-        return elasticService.getAllPersonsDecrypted().stream()
-                .filter(pameasPerson -> pameasPerson.getPersonalInfo().getRole().equals("passenger")).collect(Collectors.toList());
+//        return elasticService.getAllPersonsDecrypted().stream()
+//                .filter(pameasPerson -> pameasPerson.getPersonalInfo().getRole().equals("passenger")).collect(Collectors.toList());
+        return elasticService.getAllPassengersDecrypted() ;
+    }
+
+
+    @GetMapping("/getPassengersPerAssignedGeofence")
+    public @ResponseBody
+    PassengerMusteringStatusTO getPassengersPerAssignedGeofence(@RequestParam String geofenceName) {
+        PassengerMusteringStatusTO musteringStatusTO = new PassengerMusteringStatusTO();
+
+        List<PameasPerson> allPassengers = elasticService.getAllPersonsDecrypted().stream()
+                .filter(pameasPerson -> {
+                    return pameasPerson.getPersonalInfo().getRole().equals("passenger")
+                            && pameasPerson.getPersonalInfo().getAssignedMusteringStation().equals(geofenceName);
+                }).collect(Collectors.toList());
+
+        List<PameasPerson> passengersAtMS = allPassengers.stream().filter(pameasPerson -> {
+            int locationsSize = pameasPerson.getLocationInfo().getLocationHistory().size();
+            return pameasPerson.getLocationInfo().getGeofenceHistory().get(locationsSize - 1).getGfName().equals(geofenceName);
+        }).collect(Collectors.toList());
+
+        musteringStatusTO.setPassengersAssigned(allPassengers.size());
+        musteringStatusTO.setPassengersMustered(passengersAtMS.size());
+        musteringStatusTO.setPassengersMissing(allPassengers.size() - passengersAtMS.size());
+        return musteringStatusTO;
+    }
+
+
+    @GetMapping("/getPassengerVisualizationData")
+    public @ResponseBody
+    List<PassengerVisualizationTO> getPassengerVisualizationData() {
+
+        return elasticService.getAllPassengersDecrypted().stream().map(pameasPerson -> {
+                    PassengerVisualizationTO visualizationTO = new PassengerVisualizationTO();
+                    int locationSize = pameasPerson.getLocationInfo().getLocationHistory().size();
+                    visualizationTO.setXLoc(pameasPerson.getLocationInfo().getLocationHistory().get(locationSize -1).getXLocation());
+                    visualizationTO.setYLoc(pameasPerson.getLocationInfo().getLocationHistory().get(locationSize -1).getYLocation());
+                    visualizationTO.setAssignedMS(pameasPerson.getPersonalInfo().getAssignedMusteringStation());
+                    ArrayList<String> mobilityIssues = new ArrayList<>();
+                    if(!StringUtils.isEmpty(pameasPerson.getPersonalInfo().getMedicalCondition())){
+                        mobilityIssues.add(pameasPerson.getPersonalInfo().getMedicalCondition());
+                    }
+                    if(!StringUtils.isEmpty(pameasPerson.getPersonalInfo().getPrengencyData())){
+                        mobilityIssues.add(pameasPerson.getPersonalInfo().getPrengencyData());
+                    }
+                    if(!StringUtils.isEmpty(pameasPerson.getPersonalInfo().getMobilityIssues())){
+                        mobilityIssues.add(pameasPerson.getPersonalInfo().getMobilityIssues());
+                    }
+
+                    visualizationTO.setMobility(mobilityIssues);
+                    visualizationTO.setGeofence(pameasPerson.getLocationInfo().getGeofenceHistory().get(locationSize-1).getGfName());
+                    return visualizationTO;
+                }).collect(Collectors.toList());
+
+
     }
 
 
@@ -192,7 +280,7 @@ public class PersonControllers {
     List<PassengerCommunicationDetailsTO> getPassengerCommunicationDetails() {
 
         return elasticService.getAllPersonsDecrypted().stream()
-                .filter(pameasPerson -> pameasPerson.getPersonalInfo().getRole().equals("passenger"))
+//                .filter(pameasPerson -> pameasPerson.getPersonalInfo().getRole().equals("passenger"))
                 .map(pameasPerson -> {
                     PassengerCommunicationDetailsTO detailsTO = new PassengerCommunicationDetailsTO();
                     detailsTO.setMacAddress(pameasPerson.getNetworkInfo().getDeviceInfoList().get(0).getMacAddress());
@@ -207,8 +295,8 @@ public class PersonControllers {
     public @ResponseBody
     List<PassengerMusteringDetailsTO> getPassengerMusteringDetails() {
 
-        return elasticService.getAllPersonsDecrypted().stream()
-                .filter(pameasPerson -> pameasPerson.getPersonalInfo().getRole().equals("passenger"))
+        return elasticService.getAllPassengersDecrypted().stream()
+//                .filter(pameasPerson -> pameasPerson.getPersonalInfo().getRole().equals("passenger"))
                 .map(pameasPerson -> {
                     PassengerMusteringDetailsTO detailsTO = new PassengerMusteringDetailsTO();
                     detailsTO.setGeneralInfo(PameasPersonFactory.transformPameasPerson2PersonTO(pameasPerson));
@@ -261,7 +349,7 @@ public class PersonControllers {
                 person.get().getPersonalInfo().setOxygenSaturation(braceletDataTO.getSp02());
                 String decryptedPersonaId = this.cryptoUtils.decryptBase64Message(person.get().getPersonalInfo().getPersonalId());
                 elasticService.updatePerson("", person.get());
-                return  "OK";
+                return "OK";
             } else {
                 log.error("no person found with bracelet {}", braceletDataTO.getId());
             }
@@ -269,7 +357,7 @@ public class PersonControllers {
                  IllegalBlockSizeException | NoSuchPaddingException e) {
             log.error(e.getMessage());
         }
-        return  "ERROR";
+        return "ERROR";
     }
 
 

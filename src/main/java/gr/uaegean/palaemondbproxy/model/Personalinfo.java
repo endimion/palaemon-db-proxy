@@ -89,6 +89,9 @@ public class Personalinfo implements Serializable {
     @Field(type = Text)
     private String hasFallen;
 
+    @Field(type=Text)
+    private String heartBeat;
+
     public enum AssignmentStatus {
         ASSIGNED("ASSIGNED"),
         UNASSIGNED("UNASSIGNED");

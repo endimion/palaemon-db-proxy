@@ -1,5 +1,6 @@
 package gr.uaegean.palaemondbproxy.controllers;
 
+import gr.uaegean.palaemondbproxy.model.TO.LocationHealthTO;
 import gr.uaegean.palaemondbproxy.model.TO.LocationTO;
 import gr.uaegean.palaemondbproxy.model.TO.MinLocationTO;
 import gr.uaegean.palaemondbproxy.model.location.UserGeofenceUnit;
@@ -32,6 +33,22 @@ public class LocationControllers {
         personService.addLocationToPerson(location);
         kafkaService.saveLocation(minLocationTO);
     }
+
+    @PostMapping("/addLocationAndHealth")
+    public void addLocationAndHealth(@RequestBody LocationHealthTO locationHealth){
+        LocationTO location = new LocationTO();
+        location.setLocation(locationHealth.getLocation());
+        location.setGeofence(locationHealth.getGeofence());
+        location.setHashedMacAddress(locationHealth.getHashedMacAddress());
+        location.setMacAddress(locationHealth.getMacAddress());
+
+        MinLocationTO minLocationTO = LocationUtils.reduceLocation(location);
+
+        personService.addLocationHealthToPerson(locationHealth);
+        kafkaService.saveLocation(minLocationTO);
+    }
+
+
 
     public UserLocationUnit getLocationOfPerson(){
         return null;

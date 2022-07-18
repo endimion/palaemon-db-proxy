@@ -150,6 +150,40 @@ public class ElasticServiceImpl implements ElasticService {
 
 
     @Override
+    public List<PameasPerson> getAllPassengersDecrypted() {
+        String date = DateTimeFormatter.ofPattern("yyyy.MM.dd").format(LocalDate.now());
+
+        Query searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(matchQuery("personalInfo.role","passenger").minimumShouldMatch("100%"))
+                .build();
+        return
+                this.elasticsearchTemplate.search(searchQuery, PameasPerson.class, IndexCoordinates.of("pameas-person-" + date))
+                        .stream().map(SearchHit::getContent).map(pameasPerson -> {
+                            try {
+                                pameasPerson.getPersonalInfo().setName(cryptoUtils.decryptBase64Message(pameasPerson.getPersonalInfo().getName()));
+                                pameasPerson.getPersonalInfo().setSurname(cryptoUtils.decryptBase64Message(pameasPerson.getPersonalInfo().getSurname()));
+                                pameasPerson.getPersonalInfo().setPersonalId(cryptoUtils.decryptBase64Message(pameasPerson.getPersonalInfo().getPersonalId()));
+                                pameasPerson.getPersonalInfo().getTicketInfo().forEach(ticketInfo -> {
+                                    try {
+                                        ticketInfo.setSurname(cryptoUtils.decryptBase64Message(ticketInfo.getSurname()));
+                                        ticketInfo.setName(cryptoUtils.decryptBase64Message(ticketInfo.getName()));
+                                    } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+                                        log.error(e.getMessage());
+                                    }
+                                });
+
+                            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+                                log.error(e.getMessage());
+                            }
+                            return pameasPerson;
+                        }).collect(Collectors.toList());
+
+
+    }
+
+
+
+    @Override
     public void updatePerson(String personIdentifier, PameasPerson person) {
         Optional<PameasPerson> matchingPerson = this.getPersonByPersonalIdentifierDecrypted(personIdentifier);
         if (matchingPerson.isPresent()) {

@@ -5,6 +5,7 @@ import gr.uaegean.palaemondbproxy.model.DeviceInfo;
 import gr.uaegean.palaemondbproxy.model.LocationInfo;
 import gr.uaegean.palaemondbproxy.model.NetworkInfo;
 import gr.uaegean.palaemondbproxy.model.PameasPerson;
+import gr.uaegean.palaemondbproxy.model.TO.LocationHealthTO;
 import gr.uaegean.palaemondbproxy.model.TO.LocationTO;
 import gr.uaegean.palaemondbproxy.service.ElasticService;
 import gr.uaegean.palaemondbproxy.service.PersonService;
@@ -83,8 +84,9 @@ public class PersonServiceImpl implements PersonService {
                 String decryptedPersonaId = cryptoUtils.decryptBase64Message(person.getPersonalInfo().getPersonalId());
 
                 double speed = speedService.updatePersonSpeed(location);
-                if(speed >0){
+                if(speed >0 && speed <= 90){
                     person.getLocationInfo().setSpeed(String.valueOf(speed));
+                    log.info("SPEED successfully set to {}",person.getLocationInfo().getSpeed());
                 }else{
                     log.error("error calculating speed {}", speed);
                 }
@@ -96,6 +98,47 @@ public class PersonServiceImpl implements PersonService {
             }
         }
     }
+
+
+    @Override
+    public void addLocationHealthToPerson(LocationHealthTO location) {
+        Optional<PameasPerson> existingPerson = this.elasticService.getPersonByHashedMacAddress(location.getHashedMacAddress());
+        if (existingPerson.isPresent()) {
+            PameasPerson person = existingPerson.get();
+            if (person.getLocationInfo().getLocationHistory() == null) {
+                person.getLocationInfo().setLocationHistory(new ArrayList<>());
+            }
+            if (person.getLocationInfo().getGeofenceHistory() == null) {
+                person.getLocationInfo().setGeofenceHistory(new ArrayList<>());
+            }
+            person.getLocationInfo().getLocationHistory().add(location.getLocation());
+            person.getLocationInfo().getGeofenceHistory().add(location.getGeofence());
+            person.getPersonalInfo().setOxygenSaturation(location.getSaturation());
+            person.getPersonalInfo().setHeartBeat(location.getHeartBeat());
+
+            try {
+                String decryptedPersonaId = cryptoUtils.decryptBase64Message(person.getPersonalInfo().getPersonalId());
+                LocationTO loc = new LocationTO();
+                loc.setLocation(location.getLocation());
+                loc.setGeofence(location.getGeofence());
+                loc.setHashedMacAddress(location.getHashedMacAddress());
+                loc.setMacAddress(location.getMacAddress());
+                double speed = speedService.updatePersonSpeed(loc);
+                if(speed >0 && speed <= 90){
+                    person.getLocationInfo().setSpeed(String.valueOf(speed));
+                    log.info("SPEED successfully set to {}",person.getLocationInfo().getSpeed());
+                }else{
+                    log.error("error calculating speed {}", speed);
+                }
+
+                this.elasticService.updatePerson(decryptedPersonaId, person);
+
+            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+                log.error(e.getMessage());
+            }
+        }
+    }
+
 
     @Override
     public void deleteDeviceFromPerson(String personalIdentifier, DeviceInfo device) {

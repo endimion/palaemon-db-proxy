@@ -51,6 +51,8 @@ public class PameasPersonFactory {
         pii.setEmergencyDuty(receivedPerson.getEmergencyDuty());
         pii.setDutyScheduleList(receivedPerson.getDutySchedule());
         pii.setAssignedMusteringStation(receivedPerson.getAssignedMusteringStation());
+        pii.setOxygenSaturation(receivedPerson.getSaturation());
+        pii.setHeartBeat(receivedPerson.getHeartBeat());
         p.setPersonalInfo(pii);
 
         NetworkInfo networkInfo = new NetworkInfo();
@@ -104,6 +106,8 @@ public class PameasPersonFactory {
         pii.setEmergencyDuty(receivedPerson.getEmergencyDuty());
         pii.setDutyScheduleList(receivedPerson.getDutySchedule());
         pii.setAssignedMusteringStation(receivedPerson.getAssignedMusteringStation());
+        pii.setOxygenSaturation(receivedPerson.getSaturation());
+        pii.setHeartBeat(receivedPerson.getHeartBeat());
         p.setPersonalInfo(pii);
 
         NetworkInfo networkInfo = new NetworkInfo();

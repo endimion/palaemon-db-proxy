@@ -31,6 +31,9 @@ public class PameasPersonUtils {
         originalPerson.getPersonalInfo().setCrew(nPerson.getPersonalInfo().isCrew());
         originalPerson.getPersonalInfo().setRole(nPerson.getPersonalInfo().getRole());
         originalPerson.getPersonalInfo().setEmergencyDuty(nPerson.getPersonalInfo().getEmergencyDuty());
+        originalPerson.getPersonalInfo().setHeartBeat(nPerson.getPersonalInfo().getHeartBeat());
+        originalPerson.getPersonalInfo().setOxygenSaturation(  nPerson.getPersonalInfo().getOxygenSaturation());
+
 
 
         //update device info
@@ -45,6 +48,7 @@ public class PameasPersonUtils {
         } else {
             originalPerson.getLocationInfo().setLocationHistory(nPerson.getLocationInfo().getLocationHistory());
             originalPerson.getLocationInfo().setGeofenceHistory(nPerson.getLocationInfo().getGeofenceHistory());
+            originalPerson.getLocationInfo().setSpeed(nPerson.getLocationInfo().getSpeed());
         }
         return originalPerson;
 

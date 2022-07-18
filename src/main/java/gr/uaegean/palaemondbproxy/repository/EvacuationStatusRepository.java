@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface EvacuationStatusRepository extends ElasticsearchRepository<EvacuationStatus, String> {
 
-    Page<PameasPerson> findByPersonalInfoName(String name, Pageable pageable);
+
 
     @Query("{\"bool\": {\"must\": [{\"match_all\": {}}]}}")
     List<EvacuationStatus> findStatus();

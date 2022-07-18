@@ -115,4 +115,7 @@ public class PersonFullTO {
     //Location Stuff
     private List<UserGeofenceUnit> geofenceHistory;
     private List<UserLocationUnit> locationHistory;
+
+    private String heartBeat;
+    private String saturation;
 }
