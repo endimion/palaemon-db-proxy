@@ -41,7 +41,11 @@ public class KafkaServiceImpl implements KafkaService {
 
     private final KafkaProducer<String, PameasNotificationTO> notificationProducer;
 
+    private final KafkaProducer<String, SrapTO> srapTOKafkaProducer;
+
     private final KafkaProducer<String, KafkaHeartBeatResponse> heartBeatProducer;
+
+    private final KafkaProducer<String, EvacuationCoordinatorEventTO> evacuationCoordinatorProducer;
 
 
     @Autowired
@@ -61,11 +65,17 @@ public class KafkaServiceImpl implements KafkaService {
     public KafkaServiceImpl(KafkaProducer<String, PameasPerson> producer,
                             KafkaProducer<String, MinLocationTO> locationProducer,
                             KafkaProducer<String, PameasNotificationTO> notificationProducer,
-                            KafkaProducer<String, KafkaHeartBeatResponse> heartBeatProducer) {
+                            KafkaProducer<String, KafkaHeartBeatResponse> heartBeatProducer,
+                            KafkaProducer<String, SrapTO> srapTOKafkaProducer
+            , KafkaProducer<String, EvacuationCoordinatorEventTO> evacuationCoordinatorProducer)
+
+    {
         this.personProducer = producer;
         this.locationProducer = locationProducer;
         this.notificationProducer = notificationProducer;
         this.heartBeatProducer = heartBeatProducer;
+        this.srapTOKafkaProducer = srapTOKafkaProducer;
+        this.evacuationCoordinatorProducer =evacuationCoordinatorProducer;
     }
 
     @Override
@@ -96,6 +106,26 @@ public class KafkaServiceImpl implements KafkaService {
         try {
             log.info("pushing to  kafka PAMEAS-NOTIFICATION {}", notification);
             this.notificationProducer.send(new ProducerRecord<>("pameas-notification", notification));
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    @Override
+    public void writeSRAPTest(SrapTO srapTO) {
+        try {
+            log.info("pushing to  kafka srap {}", srapTO);
+            this.srapTOKafkaProducer.send(new ProducerRecord<>("srap", srapTO));
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    @Override
+    public void writeToEvacuationCoordinator(EvacuationCoordinatorEventTO eventTO) {
+        try {
+            log.info("pushing to  kafka {}", eventTO);
+            this.evacuationCoordinatorProducer.send(new ProducerRecord<>("evacuation-coordinator", eventTO));
         } catch (Exception e) {
             log.error(e.getMessage());
         }

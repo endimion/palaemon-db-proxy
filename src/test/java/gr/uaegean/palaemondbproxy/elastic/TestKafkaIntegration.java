@@ -1,7 +1,9 @@
 package gr.uaegean.palaemondbproxy.elastic;
 
 import gr.uaegean.palaemondbproxy.model.*;
+import gr.uaegean.palaemondbproxy.model.TO.EvacuationCoordinatorEventTO;
 import gr.uaegean.palaemondbproxy.model.TO.PameasNotificationTO;
+import gr.uaegean.palaemondbproxy.model.TO.SrapTO;
 import gr.uaegean.palaemondbproxy.model.location.UserGeofenceUnit;
 import gr.uaegean.palaemondbproxy.model.location.UserLocationUnit;
 import gr.uaegean.palaemondbproxy.service.KafkaService;
@@ -12,6 +14,8 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+
+import java.sql.Timestamp;
 
 import static java.util.Arrays.asList;
 
@@ -114,6 +118,25 @@ public class TestKafkaIntegration {
         kafkaService.writePameasNotification(pameasNotificationTO);
     }
 
+    @Test
+    public void testSrapProducer() {
+        SrapTO srapTO = new SrapTO();
+        srapTO.setStatus("ok");
+        srapTO.setPassengerId("1");
+        srapTO.setZoneId("zone1");
+
+        kafkaService.writeSRAPTest(srapTO);
+    }
+
+    @Test
+    public void testEvacCoordinatorWriting(){
+        EvacuationCoordinatorEventTO eventTO = new EvacuationCoordinatorEventTO();
+        eventTO.setOriginator("evacuation-coordinator");
+        eventTO.setTimestamp((new Timestamp(System.currentTimeMillis())).toString());
+        eventTO.setEvacuationStatus(2);
+        eventTO.setCurrent(1);
+        kafkaService.writeToEvacuationCoordinator(eventTO);
+    }
 
 
 }

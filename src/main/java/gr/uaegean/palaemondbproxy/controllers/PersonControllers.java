@@ -185,6 +185,43 @@ public class PersonControllers {
         return pameasPerson.orElse(null);
     }
 
+
+
+    @GetMapping("/getPersonByHashedMac")
+    public PameasPerson getPersonByHashedMac(@RequestParam String hashedMac) {
+        Optional<PameasPerson> pameasPerson = Optional.empty();
+        pameasPerson = elasticService.getPersonByHashedMacAddress(hashedMac);
+        if (pameasPerson.isPresent()) {
+            Personalinfo personalinfo = pameasPerson.get().getPersonalInfo();
+            List<TicketInfo> ticketInfoList = pameasPerson.get().getPersonalInfo().getTicketInfo();
+            try {
+                personalinfo.setPersonalId(cryptoUtils.decryptBase64Message(personalinfo.getPersonalId()));
+                personalinfo.setName(cryptoUtils.decryptBase64Message(personalinfo.getName()));
+                personalinfo.setSurname(cryptoUtils.decryptBase64Message(personalinfo.getSurname()));
+                pameasPerson.get().setPersonalInfo(personalinfo);
+                pameasPerson.get().getPersonalInfo().setTicketInfo(ticketInfoList.stream().map(ticketInfo -> {
+                    try {
+                        ticketInfo.setName(cryptoUtils.decryptBase64Message(ticketInfo.getName()));
+                        ticketInfo.setSurname(cryptoUtils.decryptBase64Message(ticketInfo.getSurname()));
+                        return ticketInfo;
+                    } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                             IllegalBlockSizeException | BadPaddingException e) {
+                        log.error("ERROR decrypting TicketInfo details");
+                        log.error(e.getMessage());
+                        return null;
+                    }
+                }).collect(Collectors.toList()));
+            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                     IllegalBlockSizeException | BadPaddingException e) {
+                log.error("ERROR decrypting person details");
+                log.error(e.getMessage());
+            }
+        }
+        return pameasPerson.orElse(null);
+    }
+
+
+
     @GetMapping("/getAll")
     public @ResponseBody
     List<PameasPerson> getPersonalInfo() {
@@ -246,6 +283,7 @@ public class PersonControllers {
 
                     visualizationTO.setMobility(mobilityIssues);
                     visualizationTO.setGeofence(pameasPerson.getLocationInfo().getGeofenceHistory().get(locationSize-1).getGfName());
+                    visualizationTO.setType(pameasPerson.getPersonalInfo().isCrew()?"Crew":"Passenger");
                     return visualizationTO;
                 }).collect(Collectors.toList());
 
