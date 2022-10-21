@@ -39,7 +39,7 @@ public class PersonServiceImpl implements PersonService {
 
 
     @Override
-    public void addDeviceToPerson(String personalIdentifier, DeviceInfo device, String clientId) {
+    public void addDeviceToPerson(String personalIdentifier, DeviceInfo device, String clientId, String braceletId) {
         Optional<PameasPerson> existingPerson = this.elasticService.getPersonByPersonalIdentifierDecrypted(personalIdentifier);
         if (existingPerson.isPresent()) {
             if (existingPerson.get().getNetworkInfo() == null) {
@@ -57,6 +57,10 @@ public class PersonServiceImpl implements PersonService {
                     .filter(d -> d.getMacAddress().equals(device.getMacAddress())).findFirst().isEmpty()) {
                 existingPerson.get().getNetworkInfo().getDeviceInfoList().add(device);
             }
+            if (braceletId != null) {
+                existingPerson.get().getNetworkInfo().setBraceletId(braceletId);
+            }
+
             if (StringUtils.isNotBlank(clientId)) {
                 existingPerson.get().getNetworkInfo().setMessagingAppClientId(clientId);
             }
@@ -64,8 +68,39 @@ public class PersonServiceImpl implements PersonService {
         } else {
             log.info("could not find user with PersonalIdentifier  {}", personalIdentifier);
         }
+    }
+
+
+    @Override
+    public void addDeviceUsingMumbleName(String mumbleName, DeviceInfo device) {
+
+        Optional<PameasPerson> existingPerson = this.elasticService.getPersonByHashedMacAddress(device.getHashedMacAddress());
+        if (existingPerson.isPresent()) {
+            if (existingPerson.get().getNetworkInfo() == null) {
+                NetworkInfo networkInfo = new NetworkInfo();
+                networkInfo.setDeviceInfoList(new ArrayList<>());
+                existingPerson.get().setNetworkInfo(networkInfo);
+            }
+            if (existingPerson.get().getLocationInfo() == null) {
+                LocationInfo locationInfo = new LocationInfo();
+                locationInfo.setLocationHistory(new ArrayList<>());
+                locationInfo.setGeofenceHistory(new ArrayList<>());
+                existingPerson.get().setLocationInfo(locationInfo);
+            }
+            if (existingPerson.get().getNetworkInfo().getDeviceInfoList().stream()
+                    .filter(d -> d.getMacAddress().equals(device.getMacAddress())).findFirst().isEmpty()) {
+                existingPerson.get().getNetworkInfo().getDeviceInfoList().add(device);
+            }
+
+            existingPerson.get().getNetworkInfo().setMessagingAppClientId(mumbleName);
+
+            elasticService.updatePerson(existingPerson.get().getPersonalInfo().getPersonalId(), existingPerson.get());
+        } else {
+            log.info("could not find user with PersonalIdentifier  {}", device.getMacAddress());
+        }
 
     }
+
 
     @Override
     public void addLocationToPerson(LocationTO location) {
@@ -84,16 +119,17 @@ public class PersonServiceImpl implements PersonService {
                 String decryptedPersonaId = cryptoUtils.decryptBase64Message(person.getPersonalInfo().getPersonalId());
 
                 double speed = speedService.updatePersonSpeed(location);
-                if(speed >0 && speed <= 90){
+                if (speed > 0 && speed <= 90) {
                     person.getLocationInfo().setSpeed(String.valueOf(speed));
-                    log.info("SPEED successfully set to {}",person.getLocationInfo().getSpeed());
-                }else{
+                    log.info("SPEED successfully set to {}", person.getLocationInfo().getSpeed());
+                } else {
                     log.error("error calculating speed {}", speed);
                 }
 
                 this.elasticService.updatePerson(decryptedPersonaId, person);
 
-            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                     IllegalBlockSizeException | BadPaddingException e) {
                 log.error(e.getMessage());
             }
         }
@@ -124,16 +160,17 @@ public class PersonServiceImpl implements PersonService {
                 loc.setHashedMacAddress(location.getHashedMacAddress());
                 loc.setMacAddress(location.getMacAddress());
                 double speed = speedService.updatePersonSpeed(loc);
-                if(speed >0 && speed <= 90){
+                if (speed > 0 && speed <= 90) {
                     person.getLocationInfo().setSpeed(String.valueOf(speed));
-                    log.info("SPEED successfully set to {}",person.getLocationInfo().getSpeed());
-                }else{
+                    log.info("SPEED successfully set to {}", person.getLocationInfo().getSpeed());
+                } else {
                     log.error("error calculating speed {}", speed);
                 }
 
                 this.elasticService.updatePerson(decryptedPersonaId, person);
 
-            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                     IllegalBlockSizeException | BadPaddingException e) {
                 log.error(e.getMessage());
             }
         }

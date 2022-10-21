@@ -18,7 +18,7 @@ import javax.net.ssl.SSLContext;
 @EnableElasticsearchRepositories(basePackages = "gr.uaegean.palaemondbproxy.repository")
 @ComponentScan(basePackages = { "gr.uaegean.palaemondbproxy.service" })
 public class ESConfig {
-    //TODO read these from .env
+
 
 //    @Value("${elasticsearch.url}")
     public String elasticsearchUrl = EnvUtils.getEnvVar("DFB_URI","dfb.palaemon.itml.gr");
@@ -60,6 +60,6 @@ public class ESConfig {
 
     @Bean
     public ElasticsearchOperations elasticsearchTemplate() {
-        return new ElasticsearchRestTemplate(client());
+            return new ElasticsearchRestTemplate(client());
     }
 }

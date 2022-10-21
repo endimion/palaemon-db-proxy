@@ -2,17 +2,22 @@ package gr.uaegean.palaemondbproxy.utils;
 
 import gr.uaegean.palaemondbproxy.model.PameasPerson;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 public class PameasPersonUtils {
 
 
     // keeps the database (ES) id of the object and pushes all the rest
-    public static PameasPerson updatePerson(PameasPerson originalPerson, PameasPerson nPerson) {
+    public static PameasPerson updatePerson(PameasPerson originalPerson, PameasPerson nPerson, CryptoUtils cryptoUtils) throws NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
         //update personal info
-        originalPerson.getPersonalInfo().setName(nPerson.getPersonalInfo().getName());
-        originalPerson.getPersonalInfo().setSurname(nPerson.getPersonalInfo().getSurname());
-        originalPerson.getPersonalInfo().setPersonalId(nPerson.getPersonalInfo().getPersonalId());
+//        originalPerson.getPersonalInfo().setName(cryptoUtils.encryptBase64(nPerson.getPersonalInfo().getName()));
+//        originalPerson.getPersonalInfo().setSurname(cryptoUtils.encryptBase64(nPerson.getPersonalInfo().getSurname()));
+//        originalPerson.getPersonalInfo().setPersonalId(cryptoUtils.encryptBase64(nPerson.getPersonalInfo().getPersonalId()));
         originalPerson.getPersonalInfo().setGender(nPerson.getPersonalInfo().getGender());
         originalPerson.getPersonalInfo().setDateOfBirth(nPerson.getPersonalInfo().getDateOfBirth());
         originalPerson.getPersonalInfo().setTicketNumber(nPerson.getPersonalInfo().getTicketNumber());
@@ -42,6 +47,7 @@ public class PameasPersonUtils {
         } else {
             originalPerson.getNetworkInfo().setDeviceInfoList(nPerson.getNetworkInfo().getDeviceInfoList());
             originalPerson.getNetworkInfo().setMessagingAppClientId(nPerson.getNetworkInfo().getMessagingAppClientId());
+            originalPerson.getNetworkInfo().setBraceletId(nPerson.getNetworkInfo().getBraceletId());
         }
         if (originalPerson.getLocationInfo() == null) {
             originalPerson.setLocationInfo(nPerson.getLocationInfo());

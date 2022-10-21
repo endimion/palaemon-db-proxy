@@ -1,13 +1,7 @@
 package gr.uaegean.palaemondbproxy.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gr.uaegean.palaemondbproxy.model.Geofence;
-import gr.uaegean.palaemondbproxy.model.PameasPerson;
-import gr.uaegean.palaemondbproxy.model.Personalinfo;
+import gr.uaegean.palaemondbproxy.model.*;
 import gr.uaegean.palaemondbproxy.model.TO.*;
-import gr.uaegean.palaemondbproxy.model.TicketInfo;
 import gr.uaegean.palaemondbproxy.model.location.UserGeofenceUnit;
 import gr.uaegean.palaemondbproxy.model.location.UserLocationUnit;
 import gr.uaegean.palaemondbproxy.repository.GeofenceRepository;
@@ -15,6 +9,7 @@ import gr.uaegean.palaemondbproxy.service.ElasticService;
 import gr.uaegean.palaemondbproxy.service.KafkaService;
 import gr.uaegean.palaemondbproxy.utils.CryptoUtils;
 import gr.uaegean.palaemondbproxy.utils.PameasPersonFactory;
+import gr.uaegean.palaemondbproxy.utils.Wrappers;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +21,7 @@ import javax.crypto.NoSuchPaddingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -74,9 +70,14 @@ public class PersonControllers {
             log.error(e.getMessage());
         }
         PameasPerson wrappedPerson = PameasPersonFactory.getFromPersonTO(person);
+        NetworkInfo networkInfo = new NetworkInfo();
+        networkInfo.setDeviceInfoList(new ArrayList<>());
+        networkInfo.setBraceletId(person.getBracelet());
+        wrappedPerson.setNetworkInfo(networkInfo);
+
 //        log.info(wrappedPerson.toString());
-        kafkaService.savePerson(wrappedPerson);
-//        elasticService.save(wrappedPerson);
+//        kafkaService.savePerson(wrappedPerson);
+        elasticService.save(wrappedPerson);
 
     }
 
@@ -186,6 +187,58 @@ public class PersonControllers {
     }
 
 
+    @GetMapping("/getPersonReportById")
+    public PersonReportTO getPersonReportById(@RequestParam String id) {
+        Optional<PameasPerson> pameasPerson = elasticService.getPersonByPersonalIdentifierDecrypted(id);
+        if (pameasPerson.isPresent()) {
+            try {
+                return Wrappers.pameasPerson2PersonReport(pameasPerson.get(), this.cryptoUtils);
+            } catch (NoSuchPaddingException | IllegalBlockSizeException | NoSuchAlgorithmException |
+                     BadPaddingException | InvalidKeyException e) {
+                log.error(e.getMessage());
+                return null;
+            }
+        }
+        return null;
+    }
+
+
+    @GetMapping("/findUserFromMumbleName")
+    public PameasPerson findUserFromMumbleName(@RequestParam String mumbleName) {
+        Optional<PameasPerson> pameasPerson = Optional.empty();
+        pameasPerson = elasticService.getPersonByMumbleName(mumbleName);
+        log.info("looking for person with {}", mumbleName);
+        if (pameasPerson.isPresent()) {
+            Personalinfo personalinfo = pameasPerson.get().getPersonalInfo();
+            List<TicketInfo> ticketInfoList = pameasPerson.get().getPersonalInfo().getTicketInfo();
+            try {
+                personalinfo.setPersonalId(cryptoUtils.decryptBase64Message(personalinfo.getPersonalId()));
+                personalinfo.setName(cryptoUtils.decryptBase64Message(personalinfo.getName()));
+                personalinfo.setSurname(cryptoUtils.decryptBase64Message(personalinfo.getSurname()));
+                pameasPerson.get().setPersonalInfo(personalinfo);
+                pameasPerson.get().getPersonalInfo().setTicketInfo(ticketInfoList.stream().map(ticketInfo -> {
+                    try {
+                        ticketInfo.setName(cryptoUtils.decryptBase64Message(ticketInfo.getName()));
+                        ticketInfo.setSurname(cryptoUtils.decryptBase64Message(ticketInfo.getSurname()));
+                        return ticketInfo;
+                    } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                             IllegalBlockSizeException | BadPaddingException e) {
+                        log.error("ERROR decrypting TicketInfo details");
+                        log.error(e.getMessage());
+                        return null;
+                    }
+                }).collect(Collectors.toList()));
+            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                     IllegalBlockSizeException | BadPaddingException e) {
+                log.error("ERROR decrypting person details");
+                log.error(e.getMessage());
+            }
+        } else {
+            log.info("no user with {} found", mumbleName);
+        }
+        return pameasPerson.orElse(null);
+    }
+
 
     @GetMapping("/getPersonByHashedMac")
     public PameasPerson getPersonByHashedMac(@RequestParam String hashedMac) {
@@ -221,7 +274,6 @@ public class PersonControllers {
     }
 
 
-
     @GetMapping("/getAll")
     public @ResponseBody
     List<PameasPerson> getPersonalInfo() {
@@ -233,7 +285,27 @@ public class PersonControllers {
     List<PameasPerson> getAllPassengerInfo() {
 //        return elasticService.getAllPersonsDecrypted().stream()
 //                .filter(pameasPerson -> pameasPerson.getPersonalInfo().getRole().equals("passenger")).collect(Collectors.toList());
-        return elasticService.getAllPassengersDecrypted() ;
+        return elasticService.getAllPassengersDecrypted();
+    }
+
+
+    @GetMapping("/getCrewMembersList")
+    public @ResponseBody
+    List<CrewMemberListEntryTO> getAllCrewMembersList() {
+        List<PameasPerson> allCrew = elasticService.getAllCrewMembersDecrypted();
+        return allCrew.stream().map(person -> {
+            CrewMemberListEntryTO res = new CrewMemberListEntryTO();
+            res.setName(person.getPersonalInfo().getName());
+            res.setSurname(person.getPersonalInfo().getSurname());
+            res.setTeam(person.getPersonalInfo().getEmergencyDuty());
+            if (person.getLocationInfo() != null && person.getLocationInfo().getGeofenceHistory() != null
+                    && person.getLocationInfo().getGeofenceHistory().size() > 0) {
+                res.setLocation(person.getLocationInfo().getGeofenceHistory().get(person.getLocationInfo().getGeofenceHistory().size() - 1).getGfName());
+            }
+            return res;
+        }).collect(Collectors.toList());
+
+
     }
 
 
@@ -244,8 +316,10 @@ public class PersonControllers {
 
         List<PameasPerson> allPassengers = elasticService.getAllPersonsDecrypted().stream()
                 .filter(pameasPerson -> {
-                    return pameasPerson.getPersonalInfo().getRole().equals("passenger")
-                            && pameasPerson.getPersonalInfo().getAssignedMusteringStation().equals(geofenceName);
+
+                    return pameasPerson.getPersonalInfo().getAssignedMusteringStation() != null &&
+                            (pameasPerson.getPersonalInfo().getRole().equals("passenger")
+                                    && pameasPerson.getPersonalInfo().getAssignedMusteringStation().equals(geofenceName));
                 }).collect(Collectors.toList());
 
         List<PameasPerson> passengersAtMS = allPassengers.stream().filter(pameasPerson -> {
@@ -256,6 +330,15 @@ public class PersonControllers {
         musteringStatusTO.setPassengersAssigned(allPassengers.size());
         musteringStatusTO.setPassengersMustered(passengersAtMS.size());
         musteringStatusTO.setPassengersMissing(allPassengers.size() - passengersAtMS.size());
+
+//        List<Geofence> geofences = new ArrayList<>();
+//        geofenceRepository.findAll().forEach(geofences::add);
+//        Optional<Geofence> ms =  geofences.stream().filter(geofence -> geofence.getGfName().equals(geofenceName)).findFirst().get().setGfName();
+
+        Optional<Geofence> geofence = elasticService.getGeofenceByName(geofenceName);
+        geofence.ifPresent(value -> musteringStatusTO.setOpen(value.getStatus().equalsName("OPEN")));
+
+
         return musteringStatusTO;
     }
 
@@ -265,27 +348,68 @@ public class PersonControllers {
     List<PassengerVisualizationTO> getPassengerVisualizationData() {
 
         return elasticService.getAllPassengersDecrypted().stream().map(pameasPerson -> {
-                    PassengerVisualizationTO visualizationTO = new PassengerVisualizationTO();
-                    int locationSize = pameasPerson.getLocationInfo().getLocationHistory().size();
-                    visualizationTO.setXLoc(pameasPerson.getLocationInfo().getLocationHistory().get(locationSize -1).getXLocation());
-                    visualizationTO.setYLoc(pameasPerson.getLocationInfo().getLocationHistory().get(locationSize -1).getYLocation());
-                    visualizationTO.setAssignedMS(pameasPerson.getPersonalInfo().getAssignedMusteringStation());
-                    ArrayList<String> mobilityIssues = new ArrayList<>();
-                    if(!StringUtils.isEmpty(pameasPerson.getPersonalInfo().getMedicalCondition())){
-                        mobilityIssues.add(pameasPerson.getPersonalInfo().getMedicalCondition());
-                    }
-                    if(!StringUtils.isEmpty(pameasPerson.getPersonalInfo().getPrengencyData())){
-                        mobilityIssues.add(pameasPerson.getPersonalInfo().getPrengencyData());
-                    }
-                    if(!StringUtils.isEmpty(pameasPerson.getPersonalInfo().getMobilityIssues())){
-                        mobilityIssues.add(pameasPerson.getPersonalInfo().getMobilityIssues());
-                    }
+            PassengerVisualizationTO visualizationTO = new PassengerVisualizationTO();
+            int locationSize = pameasPerson.getLocationInfo().getLocationHistory().size();
+            visualizationTO.setXLoc(pameasPerson.getLocationInfo().getLocationHistory().get(locationSize - 1).getXLocation());
+            visualizationTO.setYLoc(pameasPerson.getLocationInfo().getLocationHistory().get(locationSize - 1).getYLocation());
+            visualizationTO.setAssignedMS(pameasPerson.getPersonalInfo().getAssignedMusteringStation());
+            ArrayList<String> mobilityIssues = new ArrayList<>();
+            if (!StringUtils.isEmpty(pameasPerson.getPersonalInfo().getMedicalCondition())) {
+                mobilityIssues.add(pameasPerson.getPersonalInfo().getMedicalCondition());
+            }
+            if (!StringUtils.isEmpty(pameasPerson.getPersonalInfo().getPrengencyData())) {
+                mobilityIssues.add(pameasPerson.getPersonalInfo().getPrengencyData());
+            }
+            if (!StringUtils.isEmpty(pameasPerson.getPersonalInfo().getMobilityIssues())) {
+                mobilityIssues.add(pameasPerson.getPersonalInfo().getMobilityIssues());
+            }
 
-                    visualizationTO.setMobility(mobilityIssues);
-                    visualizationTO.setGeofence(pameasPerson.getLocationInfo().getGeofenceHistory().get(locationSize-1).getGfName());
-                    visualizationTO.setType(pameasPerson.getPersonalInfo().isCrew()?"Crew":"Passenger");
-                    return visualizationTO;
-                }).collect(Collectors.toList());
+            visualizationTO.setMobility(mobilityIssues);
+            visualizationTO.setGeofence(pameasPerson.getLocationInfo().getGeofenceHistory().get(locationSize - 1).getGfName());
+            visualizationTO.setType(pameasPerson.getPersonalInfo().isCrew() ? "Crew" : "Passenger");
+            visualizationTO.setInAssignedMS(
+                    pameasPerson.getPersonalInfo().getAssignedMusteringStation()
+                            .equals(pameasPerson.getLocationInfo().getGeofenceHistory().get(locationSize - 1).getGfName()));
+            visualizationTO.setDeck(getDeckFromGeofence(visualizationTO.getGeofence()));
+            return visualizationTO;
+        }).collect(Collectors.toList());
+
+
+    }
+
+
+    @GetMapping("/getPersonVisualizationData")
+    public @ResponseBody
+    List<PassengerVisualizationTO> getPersonVisualizationData() {
+
+        return elasticService.getAllPersonsDecrypted().stream().map(pameasPerson -> {
+            PassengerVisualizationTO visualizationTO = new PassengerVisualizationTO();
+            int locationSize = pameasPerson.getLocationInfo().getLocationHistory().size();
+            visualizationTO.setXLoc(pameasPerson.getLocationInfo().getLocationHistory().get(locationSize - 1).getXLocation());
+            visualizationTO.setYLoc(pameasPerson.getLocationInfo().getLocationHistory().get(locationSize - 1).getYLocation());
+            visualizationTO.setAssignedMS(pameasPerson.getPersonalInfo().getAssignedMusteringStation());
+            ArrayList<String> mobilityIssues = new ArrayList<>();
+            if (!StringUtils.isEmpty(pameasPerson.getPersonalInfo().getMedicalCondition())) {
+                mobilityIssues.add(pameasPerson.getPersonalInfo().getMedicalCondition());
+            }
+            if (!StringUtils.isEmpty(pameasPerson.getPersonalInfo().getPrengencyData())) {
+                mobilityIssues.add(pameasPerson.getPersonalInfo().getPrengencyData());
+            }
+            if (!StringUtils.isEmpty(pameasPerson.getPersonalInfo().getMobilityIssues())) {
+                mobilityIssues.add(pameasPerson.getPersonalInfo().getMobilityIssues());
+            }
+
+            visualizationTO.setMobility(mobilityIssues);
+            visualizationTO.setGeofence(pameasPerson.getLocationInfo().getGeofenceHistory().get(locationSize - 1).getGfName());
+            visualizationTO.setType(pameasPerson.getPersonalInfo().isCrew() ? "Crew" : "Passenger");
+            if (pameasPerson.getPersonalInfo().getAssignedMusteringStation() != null) {
+                visualizationTO.setInAssignedMS(
+                        pameasPerson.getPersonalInfo().getAssignedMusteringStation()
+                                .equals(pameasPerson.getLocationInfo().getGeofenceHistory().get(locationSize - 1).getGfName()));
+            }
+            visualizationTO.setDeck(getDeckFromGeofence(visualizationTO.getGeofence()));
+            return visualizationTO;
+        }).collect(Collectors.toList());
 
 
     }
@@ -365,6 +489,37 @@ public class PersonControllers {
         return "OK";
     }
 
+    @PostMapping("/updatePerson")
+    public @ResponseBody
+    String updatePassengerMS(@RequestBody PameasPerson person) {
+        Optional<PameasPerson> existingPerson =
+                elasticService.getPersonByHashedMacAddress(person.getNetworkInfo().getDeviceInfoList().get(0).getHashedMacAddress());
+        existingPerson.ifPresent(pameasPerson -> {
+                    try {
+                        String decryptedPersonaId = this.cryptoUtils.decryptBase64Message(person.getPersonalInfo().getPersonalId());
+                        elasticService.updatePerson(decryptedPersonaId, person);
+                    } catch (NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException |
+                             InvalidKeyException | NoSuchAlgorithmException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+        );
+        return "OK";
+    }
+
+
+    @PostMapping("/updatePassengerMSBulk")
+    public @ResponseBody
+    String updatePassengerMSBulk(@RequestBody UpdatePersonStatusTO[] persons) {
+        Arrays.stream(persons).forEach(person -> {
+            Optional<PameasPerson> existingPerson = elasticService.getPersonByHashedMacAddress(person.getHashedMacAddress());
+            existingPerson.ifPresent(pameasPerson -> pameasPerson.getPersonalInfo().setAssignedMusteringStation(person.getMusteringStation()));
+            existingPerson.ifPresent(pameasPerson -> elasticService.save(pameasPerson));
+        });
+
+        return "OK";
+    }
+
 
     @PostMapping("/updateCrewInPosition")
     public @ResponseBody
@@ -399,6 +554,46 @@ public class PersonControllers {
     }
 
 
+    @GetMapping("/getPassengersPerMusterStation")
+    public List<PassengersPerGeofenceTO> getAllPassengersPerMusterStation() {
+        List<Geofence> geofences = this.elasticService.getGeofences();
+        List<PameasPerson> passengres = this.elasticService.getAllPassengersDecrypted();
+        List<PassengersPerGeofenceTO> result = new ArrayList<>();
+        geofences.stream().filter(Geofence::isMusteringStation).forEach(musterStation -> {
+            PassengersPerGeofenceTO passengersPerGeofenceTO = new PassengersPerGeofenceTO();
+            passengersPerGeofenceTO.setGeofence(musterStation.getGfName());
+            List<MinPersonTO> persons =
+                    passengres.stream().filter(person -> person.getLocationInfo() != null && person.getLocationInfo().getGeofenceHistory().size() > 0
+                                    && person.getLocationInfo().getGeofenceHistory().get(person.getLocationInfo().getGeofenceHistory().size() - 1).getGfName().equals(musterStation.getGfName()))
+                            .collect(Collectors.toList())
+                            .stream().map(person -> {
+                                MinPersonTO minPersonTO = new MinPersonTO();
+                                minPersonTO.setEmail(person.getPersonalInfo().getEmail());
+                                minPersonTO.setGender(person.getPersonalInfo().getGender());
+                                minPersonTO.setAge(person.getPersonalInfo().getDateOfBirth());
+                                minPersonTO.setMobilityIssues(person.getPersonalInfo().getMobilityIssues());
+                                minPersonTO.setDisembarkationPort(person.getPersonalInfo().getDisembarkationPort());
+                                minPersonTO.setEmbarkationPort(person.getPersonalInfo().getEmbarkationPort());
+                                minPersonTO.setEmergencyContact(person.getPersonalInfo().getEmergencyContact());
+                                minPersonTO.setMedicalCondition(person.getPersonalInfo().getMedicalCondition());
+                                minPersonTO.setPrengencyData(person.getPersonalInfo().getPrengencyData());
+                                minPersonTO.setPostalAddress(person.getPersonalInfo().getPostalAddress());
+                                minPersonTO.setTicketNumber(person.getPersonalInfo().getTicketNumber());
+                                minPersonTO.setCountryOfResidence(person.getPersonalInfo().getCountryOfResidence());
+                                minPersonTO.setIdentifier(person.getPersonalInfo().getPersonalId());
+                                minPersonTO.setName(person.getPersonalInfo().getName());
+                                minPersonTO.setSurname(person.getPersonalInfo().getSurname());
+                                return minPersonTO;
+                            }).collect(Collectors.toList());
+            passengersPerGeofenceTO.setPersons(persons);
+
+            result.add(passengersPerGeofenceTO);
+        });
+
+        return result;
+    }
+
+
     public LatestLocationTO transformPameasPerson2LatestLocation(PameasPerson pameasPerson) {
         LatestLocationTO result = new LatestLocationTO();
 
@@ -421,6 +616,21 @@ public class PersonControllers {
         communicationDetailsTO.setMacAddress(pameasPerson.getNetworkInfo().getDeviceInfoList().get(0).getMacAddress());
         communicationDetailsTO.setPreferredLanguage(pameasPerson.getPersonalInfo().getPreferredLanguage().toArray(preferredLanguages));
         return communicationDetailsTO;
+    }
+
+
+    public String getDeckFromGeofence(String geofence) {
+        if (geofence.startsWith("7") || geofence.startsWith("S7")) {
+            return "Deck7";
+        }
+        if (geofence.startsWith("8") || geofence.startsWith("S8")) {
+            return "Deck8";
+        }
+
+        if (geofence.startsWith("9") || geofence.startsWith("S")) {
+            return "Deck9";
+        }
+        return "ERROR";
     }
 
 }

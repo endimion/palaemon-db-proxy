@@ -23,4 +23,5 @@ public class GeofenceTO implements Serializable {
     private Geofence.GeofenceStatusEnum status;
     @JsonProperty("mustering")
     private boolean isMusteringStation;
+    private String srapZone;
 }

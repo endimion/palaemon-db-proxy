@@ -17,4 +17,6 @@ public class PassengerMusteringStatusTO {
 
     //how many passengers are assigned to this MS but are not there
     private int passengersMissing;
+
+    private boolean isOpen;
 }

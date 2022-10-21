@@ -24,6 +24,8 @@ public class DeviceInfo implements Serializable {
     private String msisdn;
     @Field(type = Text)
     private String imei;
+    @Field(type = Text)
+    private  String braceletId;
 
 
 }

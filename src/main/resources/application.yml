@@ -1,3 +1,5 @@
+server:
+    port : 8090
 ####### resource server configuration properties
 spring:
     security:

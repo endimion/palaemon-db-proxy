@@ -4,6 +4,7 @@ import gr.uaegean.palaemondbproxy.model.Geofence;
 import gr.uaegean.palaemondbproxy.model.TO.GeofenceStatusResponse;
 import gr.uaegean.palaemondbproxy.model.TO.GeofenceTO;
 import gr.uaegean.palaemondbproxy.repository.GeofenceRepository;
+import gr.uaegean.palaemondbproxy.utils.SRAPUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
@@ -80,6 +81,7 @@ public class GeofenceControllers {
         geofenceTO.setGfName(geofence.getGfName());
         geofenceTO.setMusteringStation(geofence.isMusteringStation());
         geofenceTO.setId(geofence.getId());
+        geofenceTO.setSrapZone(SRAPUtils.getSrapZoneFromGeofence(geofence.getGfName()));
         return geofenceTO;
     }
 

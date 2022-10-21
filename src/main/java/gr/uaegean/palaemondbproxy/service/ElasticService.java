@@ -1,6 +1,7 @@
 package gr.uaegean.palaemondbproxy.service;
 
 import gr.uaegean.palaemondbproxy.model.EvacuationStatus;
+import gr.uaegean.palaemondbproxy.model.Geofence;
 import gr.uaegean.palaemondbproxy.model.PameasPerson;
 
 import java.util.List;
@@ -10,10 +11,14 @@ public interface ElasticService {
 
     public Optional<PameasPerson> getPersonBySurname(String surname);
     public Optional<PameasPerson> getPersonByHashedMacAddress(String hashedMacAddress);
+
+    public Optional<PameasPerson> getPersonByMumbleName(String mumbleName);
     public Optional<PameasPerson> getPersonByPersonalIdentifierDecrypted(String personalIdentifier);
     public List<PameasPerson> getAllPersonsDecrypted();
 
     public List<PameasPerson> getAllPassengersDecrypted();
+
+    public List<PameasPerson> getAllCrewMembersDecrypted();
 
     public void updatePerson(String personIdentifier, PameasPerson person);
     public void save(PameasPerson person);
@@ -23,5 +28,12 @@ public interface ElasticService {
     public void saveEvacuationStatus(EvacuationStatus evacuationStatus);
 
     public Optional<PameasPerson> getPersonByBraceletId(String braceletId);
+
+
+    public Optional<Geofence> getGeofenceByName(String name);
+
+    public List<Geofence> getGeofences();
+
+
 
 }

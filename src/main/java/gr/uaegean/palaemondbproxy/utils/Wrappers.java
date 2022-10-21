@@ -6,7 +6,13 @@ import gr.uaegean.palaemondbproxy.model.PameasPerson;
 import gr.uaegean.palaemondbproxy.model.TO.IncidentTO;
 import gr.uaegean.palaemondbproxy.model.TO.NotificationIncidentTO;
 import gr.uaegean.palaemondbproxy.model.TO.PameasNotificationTO;
+import gr.uaegean.palaemondbproxy.model.TO.PersonReportTO;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
@@ -81,6 +87,28 @@ public class Wrappers {
         return pameasNotificationTO;
 
 
+    }
+
+
+    public static PersonReportTO pameasPerson2PersonReport(PameasPerson person, CryptoUtils cryptoUtils) throws NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
+        PersonReportTO reportTO = new PersonReportTO();
+        reportTO.setAge(person.getPersonalInfo().getDateOfBirth());
+        reportTO.setGender(person.getPersonalInfo().getGender());
+        reportTO.setIdentifier(cryptoUtils.decryptBase64Message(person.getPersonalInfo().getPersonalId()));
+        reportTO.setName(cryptoUtils.decryptBase64Message(person.getPersonalInfo().getName()));
+        reportTO.setDisembarkationPort(person.getPersonalInfo().getDisembarkationPort());
+        reportTO.setEmbarkationPort(person.getPersonalInfo().getEmbarkationPort());
+        reportTO.setEmergencyContact(person.getPersonalInfo().getEmergencyContact());
+        reportTO.setSurname(cryptoUtils.decryptBase64Message(person.getPersonalInfo().getSurname()));
+        reportTO.setLatestLocation(person.getLocationInfo().getGeofenceHistory().get(person.getLocationInfo().getGeofenceHistory().size() -1).getGfName());
+        reportTO.setMedicalCondition(person.getPersonalInfo().getMedicalCondition());
+        reportTO.setTicketNumber(person.getPersonalInfo().getTicketNumber());
+        reportTO.setPrengencyData(person.getPersonalInfo().getPrengencyData());
+        reportTO.setAssignedMusteringStation(person.getPersonalInfo().getAssignedMusteringStation());
+        reportTO.setMobilityIssues(person.getPersonalInfo().getMobilityIssues());
+        String[] languages = new String[person.getPersonalInfo().getPreferredLanguage().size()];
+        reportTO.setPreferredLanguage(person.getPersonalInfo().getPreferredLanguage().toArray(languages));
+        return reportTO;
     }
 
 }

@@ -16,4 +16,6 @@ public class PassengerVisualizationTO {
     private String assignedMS;
     private ArrayList<String> mobility;
     private String type; //Crew of Passenger
+    private boolean inAssignedMS;
+    private String deck;
 }

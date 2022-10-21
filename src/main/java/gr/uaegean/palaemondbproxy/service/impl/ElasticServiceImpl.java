@@ -1,6 +1,7 @@
 package gr.uaegean.palaemondbproxy.service.impl;
 
 import gr.uaegean.palaemondbproxy.model.EvacuationStatus;
+import gr.uaegean.palaemondbproxy.model.Geofence;
 import gr.uaegean.palaemondbproxy.model.PameasPerson;
 import gr.uaegean.palaemondbproxy.repository.EvacuationStatusRepository;
 import gr.uaegean.palaemondbproxy.repository.PameasPersonRepository;
@@ -24,6 +25,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -61,7 +63,8 @@ public class ElasticServiceImpl implements ElasticService {
                         .stream().filter(result -> {
                             try {
                                 return cryptoUtils.decryptBase64Message(result.getContent().getPersonalInfo().getPersonalId()).equals(personalIdentifier);
-                            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+                            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                                     IllegalBlockSizeException | BadPaddingException e) {
                                 log.error(e.getMessage());
                                 return false;
                             }
@@ -101,6 +104,21 @@ public class ElasticServiceImpl implements ElasticService {
 
 
     @Override
+    public Optional<PameasPerson> getPersonByMumbleName(String mumbleName) {
+        String date = DateTimeFormatter.ofPattern("yyyy.MM.dd").format(LocalDate.now());
+        Query searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(matchQuery("networkInfo.messagingAppClientId", mumbleName).minimumShouldMatch("100%"))
+                .build();
+        SearchHits<PameasPerson> matchingPersons =
+                this.elasticsearchTemplate.search(searchQuery, PameasPerson.class, IndexCoordinates.of("pameas-person-" + date));
+        if (matchingPersons.getTotalHits() > 0) {
+            return Optional.of(matchingPersons.getSearchHit(0).getContent());
+        }
+        return Optional.empty();
+    }
+
+
+    @Override
     public Optional<PameasPerson> getPersonByBraceletId(String braceletId) {
         String date = DateTimeFormatter.ofPattern("yyyy.MM.dd").format(LocalDate.now());
         Query searchQuery = new NativeSearchQueryBuilder()
@@ -112,6 +130,33 @@ public class ElasticServiceImpl implements ElasticService {
             return Optional.of(matchingPersons.getSearchHit(0).getContent());
         }
         return Optional.empty();
+    }
+
+    @Override
+    public Optional<Geofence> getGeofenceByName(String name) {
+        String date = DateTimeFormatter.ofPattern("yyyy.MM.dd").format(LocalDate.now());
+        Query searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(matchQuery("gfName", name).minimumShouldMatch("100%"))
+                .build();
+        SearchHits<Geofence> matchingGeofence =
+                this.elasticsearchTemplate.search(searchQuery, Geofence.class, IndexCoordinates.of("pameas-geofence-" + date));
+        if (matchingGeofence.getTotalHits() > 0) {
+            return Optional.of(matchingGeofence.getSearchHit(0).getContent());
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public List<Geofence> getGeofences() {
+        String date = DateTimeFormatter.ofPattern("yyyy.MM.dd").format(LocalDate.now());
+        Query searchQuery = new NativeSearchQueryBuilder()
+                .build();
+        SearchHits<Geofence> matchingGeofence =
+                this.elasticsearchTemplate.search(searchQuery, Geofence.class, IndexCoordinates.of("pameas-geofence-" + date));
+        if (matchingGeofence.getTotalHits() > 0) {
+            return matchingGeofence.stream().map(SearchHit::getContent).collect(Collectors.toList());
+        }
+        return new ArrayList<>();
     }
 
 
@@ -134,12 +179,14 @@ public class ElasticServiceImpl implements ElasticService {
                                     try {
                                         ticketInfo.setSurname(cryptoUtils.decryptBase64Message(ticketInfo.getSurname()));
                                         ticketInfo.setName(cryptoUtils.decryptBase64Message(ticketInfo.getName()));
-                                    } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+                                    } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                                             IllegalBlockSizeException | BadPaddingException e) {
                                         log.error(e.getMessage());
                                     }
                                 });
 
-                            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+                            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                                     IllegalBlockSizeException | BadPaddingException e) {
                                 log.error(e.getMessage());
                             }
                             return pameasPerson;
@@ -154,7 +201,7 @@ public class ElasticServiceImpl implements ElasticService {
         String date = DateTimeFormatter.ofPattern("yyyy.MM.dd").format(LocalDate.now());
 
         Query searchQuery = new NativeSearchQueryBuilder()
-                .withQuery(matchQuery("personalInfo.role","passenger").minimumShouldMatch("100%"))
+                .withQuery(matchQuery("personalInfo.role", "passenger").minimumShouldMatch("100%"))
                 .build();
         return
                 this.elasticsearchTemplate.search(searchQuery, PameasPerson.class, IndexCoordinates.of("pameas-person-" + date))
@@ -167,12 +214,14 @@ public class ElasticServiceImpl implements ElasticService {
                                     try {
                                         ticketInfo.setSurname(cryptoUtils.decryptBase64Message(ticketInfo.getSurname()));
                                         ticketInfo.setName(cryptoUtils.decryptBase64Message(ticketInfo.getName()));
-                                    } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+                                    } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                                             IllegalBlockSizeException | BadPaddingException e) {
                                         log.error(e.getMessage());
                                     }
                                 });
 
-                            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+                            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                                     IllegalBlockSizeException | BadPaddingException e) {
                                 log.error(e.getMessage());
                             }
                             return pameasPerson;
@@ -182,14 +231,53 @@ public class ElasticServiceImpl implements ElasticService {
     }
 
 
+    @Override
+    public List<PameasPerson> getAllCrewMembersDecrypted() {
+        String date = DateTimeFormatter.ofPattern("yyyy.MM.dd").format(LocalDate.now());
+
+        Query searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(matchQuery("personalInfo.role", "crew").minimumShouldMatch("100%"))
+                .build();
+        return
+                this.elasticsearchTemplate.search(searchQuery, PameasPerson.class, IndexCoordinates.of("pameas-person-" + date))
+                        .stream().map(SearchHit::getContent).map(pameasPerson -> {
+                            try {
+                                pameasPerson.getPersonalInfo().setName(cryptoUtils.decryptBase64Message(pameasPerson.getPersonalInfo().getName()));
+                                pameasPerson.getPersonalInfo().setSurname(cryptoUtils.decryptBase64Message(pameasPerson.getPersonalInfo().getSurname()));
+                                pameasPerson.getPersonalInfo().setPersonalId(cryptoUtils.decryptBase64Message(pameasPerson.getPersonalInfo().getPersonalId()));
+                                pameasPerson.getPersonalInfo().getTicketInfo().forEach(ticketInfo -> {
+                                    try {
+                                        ticketInfo.setSurname(cryptoUtils.decryptBase64Message(ticketInfo.getSurname()));
+                                        ticketInfo.setName(cryptoUtils.decryptBase64Message(ticketInfo.getName()));
+                                    } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                                             IllegalBlockSizeException | BadPaddingException e) {
+                                        log.error(e.getMessage());
+                                    }
+                                });
+
+                            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                                     IllegalBlockSizeException | BadPaddingException e) {
+                                log.error(e.getMessage());
+                            }
+                            return pameasPerson;
+                        }).collect(Collectors.toList());
+
+
+    }
+
 
     @Override
     public void updatePerson(String personIdentifier, PameasPerson person) {
         Optional<PameasPerson> matchingPerson = this.getPersonByPersonalIdentifierDecrypted(personIdentifier);
         if (matchingPerson.isPresent()) {
             PameasPerson fetchedPerson = matchingPerson.get();
-            PameasPersonUtils.updatePerson(fetchedPerson, person);
-            this.personRepository.save(fetchedPerson);
+            try {
+                PameasPersonUtils.updatePerson(fetchedPerson, person, cryptoUtils);
+                this.personRepository.save(fetchedPerson);
+            } catch (Exception e) {
+                log.error(e.getMessage());
+            }
+
         }
     }
 
@@ -205,7 +293,7 @@ public class ElasticServiceImpl implements ElasticService {
 
     @Override
     public void saveEvacuationStatus(EvacuationStatus evacuationStatus) {
-        try{
+        try {
             Optional<EvacuationStatus> existingStatus = evacuationStatusRepository.findStatus().stream().findFirst();
             if (existingStatus.isPresent()) {
                 existingStatus.get().setStatus(evacuationStatus.getStatus());
@@ -213,7 +301,7 @@ public class ElasticServiceImpl implements ElasticService {
             } else {
                 evacuationStatusRepository.save(evacuationStatus);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error(e.getMessage());
             evacuationStatusRepository.save(evacuationStatus);
         }
