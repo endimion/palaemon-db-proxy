@@ -160,9 +160,9 @@ public class PersonServiceImpl implements PersonService {
                 String decryptedPersonaId = cryptoUtils.decryptBase64Message(person.getPersonalInfo().getPersonalId());
 
                 double speed = speedService.updatePersonSpeed(location);
-                if (speed > 0 && speed <= 90) {
+                if (speed >= 0 && speed <= 90) {
                     person.getLocationInfo().setSpeed(String.valueOf(speed));
-                    log.info("SPEED successfully set to {}", person.getLocationInfo().getSpeed());
+                    // log.info("SPEED successfully set to {}", person.getLocationInfo().getSpeed());
                 } else {
                     log.error("error calculating speed {}", speed);
                 }

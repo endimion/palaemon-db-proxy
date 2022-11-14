@@ -38,7 +38,7 @@ public class SpeedServiceImpl implements SpeedService {
     @Override
     public double calculateSpeed(double distance, long t1, long t2) {
         double timeElapsed = Math.abs(t2 - t1);
-        return (distance / timeElapsed)*60;
+        return (distance / timeElapsed) * 60;
     }
 
     @Override
@@ -54,7 +54,12 @@ public class SpeedServiceImpl implements SpeedService {
                 String oldYString = person.getLocationInfo().getLocationHistory().get(lastLocationIndex).getYLocation();
                 //2022-07-04 11:47:03
                 String oldTimestamp = person.getLocationInfo().getLocationHistory().get(lastLocationIndex).getTimestamp();
-                SimpleDateFormat sdfu = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                SimpleDateFormat sdfu = null;
+                if (oldTimestamp.toLowerCase().indexOf("z") > 0) {
+                    sdfu = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+                } else {
+                    sdfu = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                }
                 Date udate = null;
                 try {
                     udate = sdfu.parse(oldTimestamp);
@@ -75,8 +80,8 @@ public class SpeedServiceImpl implements SpeedService {
 
                         double speed = this.calculateSpeed(this.calculateDistance(oldXDouble, currentXDouble, oldYDouble, currentYDouble),
                                 durationinSeconds2, durationinSecondsCurrent);
-                        log.info("Calculated the speed {}", speed);
-                        return  speed;
+//                        log.info("Calculated the speed {}", speed);
+                        return speed;
                     }
 
                 } catch (ParseException e) {
