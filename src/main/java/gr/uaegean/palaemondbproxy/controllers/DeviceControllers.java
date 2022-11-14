@@ -10,9 +10,11 @@ import gr.uaegean.palaemondbproxy.service.ElasticService;
 import gr.uaegean.palaemondbproxy.service.PersonService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.crypto.BadPaddingException;
@@ -33,7 +35,7 @@ public class DeviceControllers {
 
 
     @PostMapping("/addDevice")
-    public void addDeviceInfoToPerson(@RequestBody AddDevicePersonTO addDevicePersonTO) {
+    public @ResponseBody  String addDeviceInfoToPerson(@RequestBody AddDevicePersonTO addDevicePersonTO) {
         DeviceInfo deviceInfo = new DeviceInfo();
         deviceInfo.setMsisdn(addDevicePersonTO.getMsisdn());
         deviceInfo.setImsi(addDevicePersonTO.getImsi());
@@ -43,8 +45,17 @@ public class DeviceControllers {
         final MessageDigest digest;
         String sha256hex = DigestUtils.sha256Hex(addDevicePersonTO.getMacAddress());
         deviceInfo.setHashedMacAddress(sha256hex);
-        this.personService.addDeviceToPerson(addDevicePersonTO.getIdentifier(), deviceInfo,
+
+        if(StringUtils.isEmpty(addDevicePersonTO.getTicketNumber())){
+            this.personService.addDeviceToPerson(addDevicePersonTO.getIdentifier(), deviceInfo,
+                    addDevicePersonTO.getMessagingAppClientId(), addDevicePersonTO.getBraceletId());
+            return  "OK";
+        }
+
+        this.personService.addDeviceToPersonByTicketNumber(addDevicePersonTO.getTicketNumber(), deviceInfo,
                 addDevicePersonTO.getMessagingAppClientId(), addDevicePersonTO.getBraceletId());
+        return  "OK";
+
     }
 
 

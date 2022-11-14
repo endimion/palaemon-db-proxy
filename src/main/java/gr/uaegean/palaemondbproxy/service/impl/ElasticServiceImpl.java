@@ -116,6 +116,20 @@ public class ElasticServiceImpl implements ElasticService {
         return Optional.empty();
     }
 
+    @Override
+    public Optional<PameasPerson> getPersonByTicketNumber(String ticketNumber) {
+        String date = DateTimeFormatter.ofPattern("yyyy.MM.dd").format(LocalDate.now());
+        Query searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(matchQuery("personalInfo.ticketNumber", ticketNumber).minimumShouldMatch("100%"))
+                .build();
+        SearchHits<PameasPerson> matchingPersons =
+                this.elasticsearchTemplate.search(searchQuery, PameasPerson.class, IndexCoordinates.of("pameas-person-" + date));
+        if (matchingPersons.getTotalHits() > 0) {
+            return Optional.of(matchingPersons.getSearchHit(0).getContent());
+        }
+        return Optional.empty();
+    }
+
 
     @Override
     public Optional<PameasPerson> getPersonByMumbleName(String mumbleName) {
@@ -281,8 +295,8 @@ public class ElasticServiceImpl implements ElasticService {
 
 
     @Override
-    public void updatePerson(String personIdentifier, PameasPerson person) {
-        Optional<PameasPerson> matchingPerson = this.getPersonByPersonalIdentifierDecrypted(personIdentifier);
+    public void updatePerson(String personIdentifierDecrypted, PameasPerson person) {
+        Optional<PameasPerson> matchingPerson = this.getPersonByPersonalIdentifierDecrypted(personIdentifierDecrypted);
         if (matchingPerson.isPresent()) {
             PameasPerson fetchedPerson = matchingPerson.get();
             try {

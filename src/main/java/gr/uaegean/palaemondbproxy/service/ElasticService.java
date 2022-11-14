@@ -13,6 +13,8 @@ public interface ElasticService {
     public Optional<PameasPerson> getPersonByHashedMacAddress(String hashedMacAddress);
     public Optional<PameasPerson> getPersonByMacAddress(String macAddress);
 
+    public Optional<PameasPerson> getPersonByTicketNumber(String ticketNumber);
+
     public Optional<PameasPerson> getPersonByMumbleName(String mumbleName);
     public Optional<PameasPerson> getPersonByPersonalIdentifierDecrypted(String personalIdentifier);
     public List<PameasPerson> getAllPersonsDecrypted();
@@ -21,7 +23,7 @@ public interface ElasticService {
 
     public List<PameasPerson> getAllCrewMembersDecrypted();
 
-    public void updatePerson(String personIdentifier, PameasPerson person);
+    public void updatePerson(String personIdentifierDecrypted, PameasPerson person);
     public void save(PameasPerson person);
 
 

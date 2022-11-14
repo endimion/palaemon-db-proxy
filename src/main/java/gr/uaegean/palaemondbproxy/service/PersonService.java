@@ -14,6 +14,9 @@ import java.security.NoSuchAlgorithmException;
 public interface PersonService {
 
     public void addDeviceToPerson(String personalIdentifier, DeviceInfo device, String clientId, String braceletId);
+
+    public void addDeviceToPersonByTicketNumber(String ticketNumber, DeviceInfo device, String clientId, String braceletId);
+
     public void addLocationToPerson(LocationTO location);
     public void addLocationHealthToPerson(LocationHealthTO location);
 

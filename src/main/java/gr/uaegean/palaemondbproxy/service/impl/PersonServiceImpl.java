@@ -70,6 +70,46 @@ public class PersonServiceImpl implements PersonService {
         }
     }
 
+    @Override
+    public void addDeviceToPersonByTicketNumber(String ticketNumber, DeviceInfo device, String clientId, String braceletId) {
+        Optional<PameasPerson> existingPerson = this.elasticService.getPersonByTicketNumber(ticketNumber);
+        if (existingPerson.isPresent()) {
+            if (existingPerson.get().getNetworkInfo() == null) {
+                NetworkInfo networkInfo = new NetworkInfo();
+                networkInfo.setDeviceInfoList(new ArrayList<>());
+                existingPerson.get().setNetworkInfo(networkInfo);
+            }
+            if (existingPerson.get().getLocationInfo() == null) {
+                LocationInfo locationInfo = new LocationInfo();
+                locationInfo.setLocationHistory(new ArrayList<>());
+                locationInfo.setGeofenceHistory(new ArrayList<>());
+                existingPerson.get().setLocationInfo(locationInfo);
+            }
+            if (existingPerson.get().getNetworkInfo().getDeviceInfoList().stream()
+                    .filter(d -> d.getMacAddress().equals(device.getMacAddress())).findFirst().isEmpty()) {
+                existingPerson.get().getNetworkInfo().getDeviceInfoList().add(device);
+            }
+            if (braceletId != null) {
+                existingPerson.get().getNetworkInfo().setBraceletId(braceletId);
+            }
+
+            if (StringUtils.isNotBlank(clientId)) {
+                existingPerson.get().getNetworkInfo().setMessagingAppClientId(clientId);
+            }
+            String decryptedPersonalIdentifier =
+                    null;
+            try {
+                decryptedPersonalIdentifier = this.cryptoUtils.decryptBase64Message(existingPerson.get().getPersonalInfo().getPersonalId());
+                elasticService.updatePerson(decryptedPersonalIdentifier, existingPerson.get());
+            } catch (NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException |
+                     NoSuchAlgorithmException e) {
+                log.error(e.getMessage());
+            }
+        } else {
+            log.info("could not find user with TicketNumber  {}",ticketNumber);
+        }
+    }
+
 
     @Override
     public void addDeviceUsingMumbleName(String mumbleName, DeviceInfo device) throws NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
