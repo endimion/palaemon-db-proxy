@@ -15,7 +15,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
@@ -45,7 +49,7 @@ public class DeviceControllers {
 
 
     @PostMapping("/registerDevice")
-    public void registerDevice(@RequestBody RegisterDeviceTO registerDeviceTO) {
+    public void registerDevice(@RequestBody RegisterDeviceTO registerDeviceTO) throws NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
         DeviceInfo deviceInfo = new DeviceInfo();
         deviceInfo.setMsisdn(registerDeviceTO.getMsisdn());
         deviceInfo.setImsi(registerDeviceTO.getImsi());

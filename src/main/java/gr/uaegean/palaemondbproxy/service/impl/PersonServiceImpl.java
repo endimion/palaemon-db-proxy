@@ -72,9 +72,9 @@ public class PersonServiceImpl implements PersonService {
 
 
     @Override
-    public void addDeviceUsingMumbleName(String mumbleName, DeviceInfo device) {
+    public void addDeviceUsingMumbleName(String mumbleName, DeviceInfo device) throws NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
 
-        Optional<PameasPerson> existingPerson = this.elasticService.getPersonByHashedMacAddress(device.getHashedMacAddress());
+        Optional<PameasPerson> existingPerson = this.elasticService.getPersonByMacAddress(device.getMacAddress());
         if (existingPerson.isPresent()) {
             if (existingPerson.get().getNetworkInfo() == null) {
                 NetworkInfo networkInfo = new NetworkInfo();
@@ -93,10 +93,11 @@ public class PersonServiceImpl implements PersonService {
             }
 
             existingPerson.get().getNetworkInfo().setMessagingAppClientId(mumbleName);
+            String personalIDDecrypted = this.cryptoUtils.decryptBase64Message(existingPerson.get().getPersonalInfo().getPersonalId());
 
-            elasticService.updatePerson(existingPerson.get().getPersonalInfo().getPersonalId(), existingPerson.get());
+            elasticService.updatePerson(personalIDDecrypted, existingPerson.get());
         } else {
-            log.info("could not find user with PersonalIdentifier  {}", device.getMacAddress());
+            log.info("could not find user with hashedMacAddress {}", device.getMacAddress());
         }
 
     }

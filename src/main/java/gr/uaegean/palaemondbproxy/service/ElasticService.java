@@ -11,6 +11,7 @@ public interface ElasticService {
 
     public Optional<PameasPerson> getPersonBySurname(String surname);
     public Optional<PameasPerson> getPersonByHashedMacAddress(String hashedMacAddress);
+    public Optional<PameasPerson> getPersonByMacAddress(String macAddress);
 
     public Optional<PameasPerson> getPersonByMumbleName(String mumbleName);
     public Optional<PameasPerson> getPersonByPersonalIdentifierDecrypted(String personalIdentifier);
