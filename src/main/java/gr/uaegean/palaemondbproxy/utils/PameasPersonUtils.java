@@ -1,6 +1,7 @@
 package gr.uaegean.palaemondbproxy.utils;
 
 import gr.uaegean.palaemondbproxy.model.PameasPerson;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -9,6 +10,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
+@Slf4j
 public class PameasPersonUtils {
 
 
@@ -46,6 +48,8 @@ public class PameasPersonUtils {
             originalPerson.setNetworkInfo(nPerson.getNetworkInfo());
         } else {
             originalPerson.getNetworkInfo().setDeviceInfoList(nPerson.getNetworkInfo().getDeviceInfoList());
+            log.info("updating {} with {}", originalPerson.getNetworkInfo().getMessagingAppClientId(),
+                    nPerson.getNetworkInfo().getMessagingAppClientId());
             originalPerson.getNetworkInfo().setMessagingAppClientId(nPerson.getNetworkInfo().getMessagingAppClientId());
             originalPerson.getNetworkInfo().setBraceletId(nPerson.getNetworkInfo().getBraceletId());
         }

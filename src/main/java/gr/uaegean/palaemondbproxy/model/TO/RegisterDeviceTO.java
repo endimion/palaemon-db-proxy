@@ -24,4 +24,5 @@ public class RegisterDeviceTO {
     private String msisdn;
     private String imei;
     private String mumbleName;
+    private String ticketNumber;
 }

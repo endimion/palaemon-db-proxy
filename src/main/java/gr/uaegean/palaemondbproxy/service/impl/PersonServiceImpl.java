@@ -12,6 +12,7 @@ import gr.uaegean.palaemondbproxy.service.PersonService;
 import gr.uaegean.palaemondbproxy.service.SpeedService;
 import gr.uaegean.palaemondbproxy.utils.CryptoUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -72,6 +73,7 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     public void addDeviceToPersonByTicketNumber(String ticketNumber, DeviceInfo device, String clientId, String braceletId) {
+        log.info("adding device using ticketNumber {}", ticketNumber);
         Optional<PameasPerson> existingPerson = this.elasticService.getPersonByTicketNumber(ticketNumber);
         if (existingPerson.isPresent()) {
             if (existingPerson.get().getNetworkInfo() == null) {
@@ -85,8 +87,12 @@ public class PersonServiceImpl implements PersonService {
                 locationInfo.setGeofenceHistory(new ArrayList<>());
                 existingPerson.get().setLocationInfo(locationInfo);
             }
-            if (existingPerson.get().getNetworkInfo().getDeviceInfoList().stream()
-                    .filter(d -> d.getMacAddress().equals(device.getMacAddress())).findFirst().isEmpty()) {
+            if (existingPerson.get().getNetworkInfo().getDeviceInfoList() != null) {
+                //.filter(d -> d.getMacAddress().equals(device.getMacAddress())).findFirst().isEmpty()) {
+                existingPerson.get().getNetworkInfo().getDeviceInfoList().forEach(deviceInfo -> {
+                    deviceInfo.setMacAddress(device.getMacAddress());
+                    deviceInfo.setHashedMacAddress(DigestUtils.sha256Hex(device.getMacAddress()));
+                });
                 existingPerson.get().getNetworkInfo().getDeviceInfoList().add(device);
             }
             if (braceletId != null) {
@@ -100,13 +106,15 @@ public class PersonServiceImpl implements PersonService {
                     null;
             try {
                 decryptedPersonalIdentifier = this.cryptoUtils.decryptBase64Message(existingPerson.get().getPersonalInfo().getPersonalId());
+                log.info(" existingPerson.get().getNetworkInfo().setMessagingAppClientId(ticketNumber); {}", ticketNumber);
+                existingPerson.get().getNetworkInfo().setMessagingAppClientId(ticketNumber);
                 elasticService.updatePerson(decryptedPersonalIdentifier, existingPerson.get());
             } catch (NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException |
                      NoSuchAlgorithmException e) {
                 log.error(e.getMessage());
             }
         } else {
-            log.info("could not find user with TicketNumber  {}",ticketNumber);
+            log.info("could not find user with TicketNumber  {}", ticketNumber);
         }
     }
 

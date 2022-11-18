@@ -36,6 +36,7 @@ public class DeviceControllers {
 
     @PostMapping("/addDevice")
     public @ResponseBody  String addDeviceInfoToPerson(@RequestBody AddDevicePersonTO addDevicePersonTO) {
+        log.info("adding device based on request {}", addDevicePersonTO);
         DeviceInfo deviceInfo = new DeviceInfo();
         deviceInfo.setMsisdn(addDevicePersonTO.getMsisdn());
         deviceInfo.setImsi(addDevicePersonTO.getImsi());
@@ -60,7 +61,8 @@ public class DeviceControllers {
 
 
     @PostMapping("/registerDevice")
-    public void registerDevice(@RequestBody RegisterDeviceTO registerDeviceTO) throws NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
+    public @ResponseBody String registerDevice(@RequestBody RegisterDeviceTO registerDeviceTO) throws NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
+        log.info("adding device based on request {}", registerDeviceTO);
         DeviceInfo deviceInfo = new DeviceInfo();
         deviceInfo.setMsisdn(registerDeviceTO.getMsisdn());
         deviceInfo.setImsi(registerDeviceTO.getImsi());
@@ -70,7 +72,15 @@ public class DeviceControllers {
         final MessageDigest digest;
         String sha256hex = DigestUtils.sha256Hex(registerDeviceTO.getMacAddress());
         deviceInfo.setHashedMacAddress(sha256hex);
-        this.personService.addDeviceUsingMumbleName(registerDeviceTO.getMumbleName(), deviceInfo);
+
+        if(StringUtils.isEmpty(registerDeviceTO.getTicketNumber())){
+            this.personService.addDeviceUsingMumbleName(registerDeviceTO.getMumbleName(), deviceInfo);
+            return  "OK";
+        }
+
+        this.personService.addDeviceToPersonByTicketNumber(registerDeviceTO.getTicketNumber(), deviceInfo,
+                registerDeviceTO.getTicketNumber(), "");
+        return  "OK";
     }
 
 
