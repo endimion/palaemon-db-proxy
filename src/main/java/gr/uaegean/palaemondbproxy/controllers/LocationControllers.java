@@ -2,10 +2,8 @@ package gr.uaegean.palaemondbproxy.controllers;
 
 import gr.uaegean.palaemondbproxy.model.EvacuationStatus;
 import gr.uaegean.palaemondbproxy.model.PameasPerson;
-import gr.uaegean.palaemondbproxy.model.TO.LocationHealthTO;
-import gr.uaegean.palaemondbproxy.model.TO.LocationTO;
-import gr.uaegean.palaemondbproxy.model.TO.MinLocationTO;
-import gr.uaegean.palaemondbproxy.model.TO.PameasNotificationTO;
+import gr.uaegean.palaemondbproxy.model.Personalinfo;
+import gr.uaegean.palaemondbproxy.model.TO.*;
 import gr.uaegean.palaemondbproxy.model.location.UserGeofenceUnit;
 import gr.uaegean.palaemondbproxy.model.location.UserLocationUnit;
 import gr.uaegean.palaemondbproxy.service.ElasticService;
@@ -69,8 +67,22 @@ public class LocationControllers {
 
         }
 
-        personService.addLocationToPerson(location);
-        kafkaService.saveLocation(minLocationTO);
+        if(person.isPresent()){
+            PameasPerson existingPerson = person.get();
+            personService.addLocationToPerson(location, existingPerson);
+            kafkaService.saveLocation(minLocationTO);
+
+
+            SRAPLocationTO srapLocationTO = new SRAPLocationTO();
+            srapLocationTO.setId(location.getHashedMacAddress());
+            srapLocationTO.setPersonalinfo(existingPerson.getPersonalInfo());
+            this.kafkaService.writeSRAPLocation(srapLocationTO);
+
+
+        }
+
+
+
     }
 
     @PostMapping("/addLocationAndHealth")

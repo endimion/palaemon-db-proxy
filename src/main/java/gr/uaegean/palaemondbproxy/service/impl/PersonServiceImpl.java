@@ -186,6 +186,38 @@ public class PersonServiceImpl implements PersonService {
 
 
     @Override
+    public void addLocationToPerson(LocationTO location, PameasPerson person) {
+
+            if (person.getLocationInfo().getLocationHistory() == null) {
+                person.getLocationInfo().setLocationHistory(new ArrayList<>());
+            }
+            if (person.getLocationInfo().getGeofenceHistory() == null) {
+                person.getLocationInfo().setGeofenceHistory(new ArrayList<>());
+            }
+            person.getLocationInfo().getLocationHistory().add(location.getLocation());
+            person.getLocationInfo().getGeofenceHistory().add(location.getGeofence());
+            try {
+                String decryptedPersonaId = cryptoUtils.decryptBase64Message(person.getPersonalInfo().getPersonalId());
+
+                double speed = speedService.updatePersonSpeed(location);
+                if (speed >= 0 && speed <= 90) {
+                    person.getLocationInfo().setSpeed(String.valueOf(speed));
+                    // log.info("SPEED successfully set to {}", person.getLocationInfo().getSpeed());
+                } else {
+                    log.error("error calculating speed {}", speed);
+                }
+
+                this.elasticService.updatePerson(decryptedPersonaId, person);
+
+            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |
+                     IllegalBlockSizeException | BadPaddingException e) {
+                log.error(e.getMessage());
+            }
+    }
+
+
+
+    @Override
     public void addLocationHealthToPerson(LocationHealthTO location) {
         Optional<PameasPerson> existingPerson = this.elasticService.getPersonByHashedMacAddress(location.getHashedMacAddress());
         if (existingPerson.isPresent()) {

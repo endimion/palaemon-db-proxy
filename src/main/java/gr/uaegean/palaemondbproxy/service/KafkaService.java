@@ -11,6 +11,9 @@ public interface KafkaService {
 
     public void saveLocation(MinLocationTO location);
 
+    public void writeSRAPLocation(SRAPLocationTO location);
+
+
     public void writePameasNotification(PameasNotificationTO notification);
 
 

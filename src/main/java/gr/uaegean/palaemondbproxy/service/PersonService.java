@@ -18,6 +18,8 @@ public interface PersonService {
     public void addDeviceToPersonByTicketNumber(String ticketNumber, DeviceInfo device, String clientId, String braceletId);
 
     public void addLocationToPerson(LocationTO location);
+
+    public void addLocationToPerson(LocationTO location, PameasPerson person);
     public void addLocationHealthToPerson(LocationHealthTO location);
 
     public void deleteDeviceFromPerson(String personalIdentifier, DeviceInfo device);

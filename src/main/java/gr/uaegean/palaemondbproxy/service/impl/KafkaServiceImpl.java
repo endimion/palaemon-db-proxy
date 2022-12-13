@@ -36,8 +36,12 @@ public class KafkaServiceImpl implements KafkaService {
     static final String TOPIC = "pameas-person";
     static final String LOCATION_TOPIC = "pameas-location";
 
+    static final String SRAP_LOCATION_TOPIC = "srap-pameas-location";
+
     private final KafkaProducer<String, PameasPerson> personProducer;
     private final KafkaProducer<String, MinLocationTO> locationProducer;
+
+    private final KafkaProducer<String, SRAPLocationTO> srapLocationTOKafkaProducer;
 
     private final KafkaProducer<String, PameasNotificationTO> notificationProducer;
 
@@ -67,7 +71,8 @@ public class KafkaServiceImpl implements KafkaService {
                             KafkaProducer<String, PameasNotificationTO> notificationProducer,
                             KafkaProducer<String, KafkaHeartBeatResponse> heartBeatProducer,
                             KafkaProducer<String, SrapTO> srapTOKafkaProducer
-            , KafkaProducer<String, EvacuationCoordinatorEventTO> evacuationCoordinatorProducer)
+            , KafkaProducer<String, EvacuationCoordinatorEventTO> evacuationCoordinatorProducer,
+                            KafkaProducer<String,SRAPLocationTO> srapLocationTOKafkaProducer)
 
     {
         this.personProducer = producer;
@@ -76,6 +81,7 @@ public class KafkaServiceImpl implements KafkaService {
         this.heartBeatProducer = heartBeatProducer;
         this.srapTOKafkaProducer = srapTOKafkaProducer;
         this.evacuationCoordinatorProducer =evacuationCoordinatorProducer;
+        this.srapLocationTOKafkaProducer = srapLocationTOKafkaProducer;
     }
 
     @Override
@@ -93,9 +99,16 @@ public class KafkaServiceImpl implements KafkaService {
     @Override
     public void saveLocation(MinLocationTO location) {
         try {
-//            log.info("pushing to  kafka {}", location);
-
             this.locationProducer.send(new ProducerRecord<>(LOCATION_TOPIC, location));
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    @Override
+    public void writeSRAPLocation(SRAPLocationTO location) {
+        try {
+            this.srapLocationTOKafkaProducer.send(new ProducerRecord<>(SRAP_LOCATION_TOPIC, location));
         } catch (Exception e) {
             log.error(e.getMessage());
         }
