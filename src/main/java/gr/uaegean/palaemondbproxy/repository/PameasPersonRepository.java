@@ -14,6 +14,8 @@ public interface PameasPersonRepository extends ElasticsearchRepository<PameasPe
 
     @Query("{\"bool\": {\"must\": [{\"match\": {\"personalInfo.crew\": \"true\"}}]}}")
     List<PameasPerson> findCrewMembers();
+
+
 //
 //    @Query("{\"bool\": {\"must\": [{\"match\": {\"personalInfo.networkInfo.deviceInfoList[0].hashedMacAddress\": \"?0\"}}]}}")
 //    Page<PameasPerson> findPersonByHashedMac(String mac, Pageable pageable);

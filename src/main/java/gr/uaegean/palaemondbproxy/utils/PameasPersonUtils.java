@@ -39,8 +39,7 @@ public class PameasPersonUtils {
         originalPerson.getPersonalInfo().setRole(nPerson.getPersonalInfo().getRole());
         originalPerson.getPersonalInfo().setEmergencyDuty(nPerson.getPersonalInfo().getEmergencyDuty());
         originalPerson.getPersonalInfo().setHeartBeat(nPerson.getPersonalInfo().getHeartBeat());
-        originalPerson.getPersonalInfo().setOxygenSaturation(  nPerson.getPersonalInfo().getOxygenSaturation());
-
+        originalPerson.getPersonalInfo().setOxygenSaturation(nPerson.getPersonalInfo().getOxygenSaturation());
 
 
         //update device info
@@ -48,8 +47,10 @@ public class PameasPersonUtils {
             originalPerson.setNetworkInfo(nPerson.getNetworkInfo());
         } else {
             originalPerson.getNetworkInfo().setDeviceInfoList(nPerson.getNetworkInfo().getDeviceInfoList());
-            log.info("updating {} with {}", originalPerson.getNetworkInfo().getMessagingAppClientId(),
-                    nPerson.getNetworkInfo().getMessagingAppClientId());
+            if (originalPerson.getNetworkInfo().getMessagingAppClientId() != null &&
+                    !originalPerson.getNetworkInfo().getMessagingAppClientId().equals(nPerson.getNetworkInfo().getMessagingAppClientId()))
+                log.info("updating {} with {}", originalPerson.getNetworkInfo().getMessagingAppClientId(),
+                        nPerson.getNetworkInfo().getMessagingAppClientId());
             originalPerson.getNetworkInfo().setMessagingAppClientId(nPerson.getNetworkInfo().getMessagingAppClientId());
             originalPerson.getNetworkInfo().setBraceletId(nPerson.getNetworkInfo().getBraceletId());
         }

@@ -72,7 +72,7 @@ public class SpeedServiceImpl implements SpeedService {
 
                     String oldDeck = person.getLocationInfo().getGeofenceHistory().get(person.getLocationInfo().getGeofenceHistory().size() - 1).getDeck();
                     //if we didnt change decks update the speed
-                    if (oldDeck.equals(location.getGeofence().getDeck())) {
+                    if (oldDeck != null && oldDeck.equals(location.getGeofence().getDeck())) {
                         double oldXDouble = Double.parseDouble(oldXString);
                         double oldYDouble = Double.parseDouble(oldYString);
                         double currentXDouble = Double.parseDouble(location.getLocation().getXLocation());

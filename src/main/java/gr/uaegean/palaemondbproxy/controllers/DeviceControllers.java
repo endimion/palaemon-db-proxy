@@ -12,10 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -24,7 +21,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @Slf4j
@@ -34,8 +33,12 @@ public class DeviceControllers {
     PersonService personService;
 
 
+    @Autowired
+    ElasticService elasticService;
+
+
     @PostMapping("/addDevice")
-    public @ResponseBody  String addDeviceInfoToPerson(@RequestBody AddDevicePersonTO addDevicePersonTO) {
+    public @ResponseBody String addDeviceInfoToPerson(@RequestBody AddDevicePersonTO addDevicePersonTO) {
         log.info("adding device based on request {}", addDevicePersonTO);
         DeviceInfo deviceInfo = new DeviceInfo();
         deviceInfo.setMsisdn(addDevicePersonTO.getMsisdn());
@@ -47,15 +50,15 @@ public class DeviceControllers {
         String sha256hex = DigestUtils.sha256Hex(addDevicePersonTO.getMacAddress());
         deviceInfo.setHashedMacAddress(sha256hex);
 
-        if(StringUtils.isEmpty(addDevicePersonTO.getTicketNumber())){
+        if (StringUtils.isEmpty(addDevicePersonTO.getTicketNumber())) {
             this.personService.addDeviceToPerson(addDevicePersonTO.getIdentifier(), deviceInfo,
                     addDevicePersonTO.getMessagingAppClientId(), addDevicePersonTO.getBraceletId());
-            return  "OK";
+            return "OK";
         }
 
         this.personService.addDeviceToPersonByTicketNumber(addDevicePersonTO.getTicketNumber(), deviceInfo,
                 addDevicePersonTO.getMessagingAppClientId(), addDevicePersonTO.getBraceletId());
-        return  "OK";
+        return "OK";
 
     }
 
@@ -73,18 +76,38 @@ public class DeviceControllers {
         String sha256hex = DigestUtils.sha256Hex(registerDeviceTO.getMacAddress());
         deviceInfo.setHashedMacAddress(sha256hex);
 
-        if(StringUtils.isEmpty(registerDeviceTO.getTicketNumber())){
+        if (StringUtils.isEmpty(registerDeviceTO.getTicketNumber())) {
             this.personService.addDeviceUsingMumbleName(registerDeviceTO.getMumbleName(), deviceInfo);
-            return  "OK";
+            return "OK";
         }
 
         this.personService.addDeviceToPersonByTicketNumber(registerDeviceTO.getTicketNumber(), deviceInfo,
                 registerDeviceTO.getTicketNumber(), "");
-        return  "OK";
+        return "OK";
     }
 
 
     public List<DeviceInfo> getDevicesofPerson() {
         return null;
     }
+
+
+    @GetMapping("/getAllDeviceIdRole")
+    public @ResponseBody
+    Map<String, String> getAllDeviceIdRole() {
+        Map<String, String> result = new HashMap<>();
+
+        elasticService.getAllPersonsDecrypted().stream().forEach(person -> {
+            if(person.getNetworkInfo()!=null && person.getNetworkInfo().getDeviceInfoList() != null &&
+                    person.getNetworkInfo().getDeviceInfoList().size() > 0
+            ){
+                int size = person.getNetworkInfo().getDeviceInfoList().size();
+                String deviceId = person.getNetworkInfo().getDeviceInfoList().get(size-1).getMacAddress();
+                String role = person.getPersonalInfo().isCrew()?"crew":"passenger";
+                result.put(deviceId,role);
+            }
+        });
+        return result;
+    }
+
 }

@@ -16,6 +16,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private static final String[] AUTH_WHITELIST = {
             // -- Swagger UI v2
             "/v2/api-docs",
+            "/actuator/prometheus",
             "/swagger-resources",
             "/swagger-resources/**",
             "/configuration/ui",
@@ -36,7 +37,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         authz
                                 .antMatchers(HttpMethod.POST, "/addPerson").hasAuthority("SCOPE_write")
                                 .antMatchers("/swagger-ui/**", "/javainuse-openapi/**",
-                                        "/v3/api-docs/**").permitAll()
+                                        "/v3/api-docs/**", "/actuator/prometheus").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt);

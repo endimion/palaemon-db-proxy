@@ -11,3 +11,14 @@ spring:
 logging:
     level:
         org.elasticsearch.client.RestClient: ERROR
+
+management:
+    endpoint:
+        metrics:
+            enabled: true
+        prometheus:
+            enabled: true
+    endpoints:
+        web:
+            exposure:
+                include: prometheus

@@ -3,10 +3,8 @@ package gr.uaegean.palaemondbproxy.utils;
 
 import gr.uaegean.palaemondbproxy.model.Incident;
 import gr.uaegean.palaemondbproxy.model.PameasPerson;
-import gr.uaegean.palaemondbproxy.model.TO.IncidentTO;
-import gr.uaegean.palaemondbproxy.model.TO.NotificationIncidentTO;
-import gr.uaegean.palaemondbproxy.model.TO.PameasNotificationTO;
-import gr.uaegean.palaemondbproxy.model.TO.PersonReportTO;
+import gr.uaegean.palaemondbproxy.model.TO.*;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -100,7 +98,7 @@ public class Wrappers {
         reportTO.setEmbarkationPort(person.getPersonalInfo().getEmbarkationPort());
         reportTO.setEmergencyContact(person.getPersonalInfo().getEmergencyContact());
         reportTO.setSurname(cryptoUtils.decryptBase64Message(person.getPersonalInfo().getSurname()));
-        reportTO.setLatestLocation(person.getLocationInfo().getGeofenceHistory().get(person.getLocationInfo().getGeofenceHistory().size() -1).getGfName());
+        reportTO.setLatestLocation(person.getLocationInfo().getGeofenceHistory().get(person.getLocationInfo().getGeofenceHistory().size() - 1).getGfName());
         reportTO.setMedicalCondition(person.getPersonalInfo().getMedicalCondition());
         reportTO.setTicketNumber(person.getPersonalInfo().getTicketNumber());
         reportTO.setPrengencyData(person.getPersonalInfo().getPrengencyData());
@@ -109,6 +107,19 @@ public class Wrappers {
         String[] languages = new String[person.getPersonalInfo().getPreferredLanguage().size()];
         reportTO.setPreferredLanguage(person.getPersonalInfo().getPreferredLanguage().toArray(languages));
         return reportTO;
+    }
+
+
+    public static PassengerPIMMTO pameasPerson2PassengerPIMMTO(PameasPerson person) {
+        PassengerPIMMTO passengerPIMMTO = new PassengerPIMMTO();
+        passengerPIMMTO.setFistName(person.getPersonalInfo().getName());
+        passengerPIMMTO.setLastName(person.getPersonalInfo().getSurname());
+        if (StringUtils.isNotBlank(person.getNetworkInfo().getMessagingAppClientId())) {
+            passengerPIMMTO.setMessagingId(person.getNetworkInfo().getMessagingAppClientId());
+        }else{
+            passengerPIMMTO.setMessagingId("N/A");
+        }
+        return passengerPIMMTO;
     }
 
 }

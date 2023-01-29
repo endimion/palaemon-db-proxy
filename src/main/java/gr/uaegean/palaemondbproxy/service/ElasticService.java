@@ -3,6 +3,7 @@ package gr.uaegean.palaemondbproxy.service;
 import gr.uaegean.palaemondbproxy.model.EvacuationStatus;
 import gr.uaegean.palaemondbproxy.model.Geofence;
 import gr.uaegean.palaemondbproxy.model.PameasPerson;
+import org.elasticsearch.index.query.QueryBuilder;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +37,10 @@ public interface ElasticService {
     public Optional<Geofence> getGeofenceByName(String name);
 
     public List<Geofence> getGeofences();
+
+
+
+
 
 
 

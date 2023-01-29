@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 
@@ -384,6 +385,11 @@ public class PersonControllers {
 
         return elasticService.getAllPersonsDecrypted().stream().map(pameasPerson -> {
             PassengerVisualizationTO visualizationTO = new PassengerVisualizationTO();
+            if (pameasPerson.getLocationInfo() == null || pameasPerson.getLocationInfo().getLocationHistory() == null
+                    || pameasPerson.getLocationInfo().getGeofenceHistory() == null
+                    || pameasPerson.getLocationInfo().getLocationHistory().size() == 0)
+                return visualizationTO;
+
             int locationSize = pameasPerson.getLocationInfo().getLocationHistory().size();
             visualizationTO.setXLoc(pameasPerson.getLocationInfo().getLocationHistory().get(locationSize - 1).getXLocation());
             visualizationTO.setYLoc(pameasPerson.getLocationInfo().getLocationHistory().get(locationSize - 1).getYLocation());
@@ -501,6 +507,7 @@ public class PersonControllers {
                     } catch (NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException |
                              InvalidKeyException | NoSuchAlgorithmException e) {
                         log.error(e.getMessage());
+                        elasticService.updatePerson(person.getPersonalInfo().getPersonalId(), person);
                     }
                 }
         );
@@ -554,43 +561,58 @@ public class PersonControllers {
     }
 
 
-    @GetMapping("/getPassengersPerMusterStation")
-    public List<PassengersPerGeofenceTO> getAllPassengersPerMusterStation() {
+    @GetMapping("/getPassengersPerGeofence")
+    public List<PassengersListPerGeoTO> getPassengersPerGeofence() {
         List<Geofence> geofences = this.elasticService.getGeofences();
-        List<PameasPerson> passengres = this.elasticService.getAllPassengersDecrypted();
-        List<PassengersPerGeofenceTO> result = new ArrayList<>();
-        geofences.stream().filter(Geofence::isMusteringStation).forEach(musterStation -> {
-            PassengersPerGeofenceTO passengersPerGeofenceTO = new PassengersPerGeofenceTO();
-            passengersPerGeofenceTO.setGeofence(musterStation.getGfName());
-            List<MinPersonTO> persons =
-                    passengres.stream().filter(person -> person.getLocationInfo() != null && person.getLocationInfo().getGeofenceHistory().size() > 0
-                                    && person.getLocationInfo().getGeofenceHistory().get(person.getLocationInfo().getGeofenceHistory().size() - 1).getGfName().equals(musterStation.getGfName()))
-                            .collect(Collectors.toList())
-                            .stream().map(person -> {
-                                MinPersonTO minPersonTO = new MinPersonTO();
-                                minPersonTO.setEmail(person.getPersonalInfo().getEmail());
-                                minPersonTO.setGender(person.getPersonalInfo().getGender());
-                                minPersonTO.setAge(person.getPersonalInfo().getDateOfBirth());
-                                minPersonTO.setMobilityIssues(person.getPersonalInfo().getMobilityIssues());
-                                minPersonTO.setDisembarkationPort(person.getPersonalInfo().getDisembarkationPort());
-                                minPersonTO.setEmbarkationPort(person.getPersonalInfo().getEmbarkationPort());
-                                minPersonTO.setEmergencyContact(person.getPersonalInfo().getEmergencyContact());
-                                minPersonTO.setMedicalCondition(person.getPersonalInfo().getMedicalCondition());
-                                minPersonTO.setPrengencyData(person.getPersonalInfo().getPrengencyData());
-                                minPersonTO.setPostalAddress(person.getPersonalInfo().getPostalAddress());
-                                minPersonTO.setTicketNumber(person.getPersonalInfo().getTicketNumber());
-                                minPersonTO.setCountryOfResidence(person.getPersonalInfo().getCountryOfResidence());
-                                minPersonTO.setIdentifier(person.getPersonalInfo().getPersonalId());
-                                minPersonTO.setName(person.getPersonalInfo().getName());
-                                minPersonTO.setSurname(person.getPersonalInfo().getSurname());
-                                return minPersonTO;
-                            }).collect(Collectors.toList());
-            passengersPerGeofenceTO.setPersons(persons);
+        List<PameasPerson> passengers = this.elasticService.getAllPassengersDecrypted();
+        AtomicReference<String> label = new AtomicReference<>("");
 
-            result.add(passengersPerGeofenceTO);
-        });
+        return geofences.stream().map(geofence -> {
+            String geoName = geofence.getGfName();
+            switch (geofence.getGfName()) {
+                case "9CG0":
+                    label.set("Muster Station D");
+                    break;
+                case "9BG1":
+                    label.set("VIP lounge");
+                    break;
+                case "9BG2":
+                    label.set("Restaurant");
+                    break;
+                case "9BG1+":
+                    label.set("Staircase");
+                    break;
+                case "9BG4":
+                    label.set("Cabin corridor");
+                    break;
+                case "9BG3":
+                    label.set("corridor");
+                    break;
+                default:
+                    label.set(geofence.getGfName());
+                    break;
+            }
 
-        return result;
+            List<PassengerPIMMTO> pList = passengers.stream().filter(person -> {
+                        if (person.getLocationInfo().getGeofenceHistory() != null) {
+                            int sizeOfLocations = person.getLocationInfo().getGeofenceHistory().size();
+                            if (sizeOfLocations > 0) {
+                                return geoName.equals(person.getLocationInfo().getGeofenceHistory().get(sizeOfLocations - 1).getGfName());
+                            }
+                        }
+                        return false;
+                    }).map(Wrappers::pameasPerson2PassengerPIMMTO).map(passengerPIMMTO -> {
+
+                        return passengerPIMMTO;
+                    })
+                    .collect(Collectors.toList());
+            PassengersListPerGeoTO passengerPIMMTO = new PassengersListPerGeoTO();
+            passengerPIMMTO.setGeofence(geoName);
+            passengerPIMMTO.setPassengers(pList);
+            passengerPIMMTO.setLabel(label.get());
+
+            return passengerPIMMTO;
+        }).collect(Collectors.toList());
     }
 
 

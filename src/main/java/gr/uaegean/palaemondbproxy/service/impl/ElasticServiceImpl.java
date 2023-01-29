@@ -9,6 +9,7 @@ import gr.uaegean.palaemondbproxy.service.ElasticService;
 import gr.uaegean.palaemondbproxy.utils.CryptoUtils;
 import gr.uaegean.palaemondbproxy.utils.PameasPersonUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
@@ -188,6 +189,7 @@ public class ElasticServiceImpl implements ElasticService {
     }
 
 
+
     // personalIdentifier in plain text,
     @Override
     public List<PameasPerson> getAllPersonsDecrypted() {
@@ -335,6 +337,9 @@ public class ElasticServiceImpl implements ElasticService {
         }
 
     }
+
+
+
 }
 
 

@@ -207,6 +207,7 @@ public class PersonServiceImpl implements PersonService {
                     log.error("error calculating speed {}", speed);
                 }
 
+                log.info("updating location of person {}", person.getNetworkInfo().getMessagingAppClientId());
                 this.elasticService.updatePerson(decryptedPersonaId, person);
 
             } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException |

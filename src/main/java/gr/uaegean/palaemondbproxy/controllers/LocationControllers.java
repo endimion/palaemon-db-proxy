@@ -40,47 +40,51 @@ public class LocationControllers {
         // then generate a PaMEASNotificaiton with the PassengerId  and MusterSTation (geofence)
         // to alert the passenger
         Optional<PameasPerson> person = this.elasticService.getPersonByHashedMacAddress(location.getHashedMacAddress());
-        Optional<EvacuationStatus> estatus = this.elasticService.getEvacuationStatus();
-        if (!estatus.isPresent() || !estatus.get().getStatus().contains("7")) {
-            //we are not in embarkation check if passengers is moving away from MS
-            if (person.isPresent()) {
-                int locationSize = person.get().getLocationInfo().getGeofenceHistory().size();
-                //if the person was at the MS
-                String ms = person.get().getPersonalInfo().getAssignedMusteringStation();
-                if (ms != null && person.get().getLocationInfo() != null &&
-                        person.get().getLocationInfo().getGeofenceHistory() != null
-                        &&
-                        person.get().getLocationInfo().getGeofenceHistory().size() > 0
-                        &&
-                        person.get().getLocationInfo().getGeofenceHistory().get(locationSize - 1).
-                                getGfName().equals(ms)) {
-                    //check if person is leaving the MS
-                    if (!ms.equals(location.getGeofence().getGfName()) && !person.get().getPersonalInfo().getRole().equals("crew")) {
-                        //Person left the MS!!
-                        PameasNotificationTO pameasNotificationTO = new PameasNotificationTO();
-                        pameasNotificationTO.setType("PASSENGER_EXITING_MS");
-                        pameasNotificationTO.setMacAddress(location.getMacAddress());
-                        kafkaService.writePameasNotification(pameasNotificationTO);
+        if (person.isPresent()) {
+            Optional<EvacuationStatus> estatus = this.elasticService.getEvacuationStatus();
+            if (!estatus.isPresent() || estatus.get().getStatus().equals("6.3")) {
+                //we are not in embarkation check if passengers is moving away from MS
+                if (person.isPresent()) {
+                    int locationSize = person.get().getLocationInfo().getGeofenceHistory().size();
+                    //if the person was at the MS
+                    String ms = person.get().getPersonalInfo().getAssignedMusteringStation();
+                    if (ms != null && person.get().getLocationInfo() != null &&
+                            person.get().getLocationInfo().getGeofenceHistory() != null
+                            &&
+                            person.get().getLocationInfo().getGeofenceHistory().size() > 0
+                            &&
+                            person.get().getLocationInfo().getGeofenceHistory().get(locationSize - 1).
+                                    getGfName().equals(ms)
+                            && !location.getGeofence().getGfName().equals(ms)
+                    ) {
+                        //check if person is leaving the MS
+                        if (!ms.equals(location.getGeofence().getGfName()) && !person.get().getPersonalInfo().getRole().equals("crew")) {
+                            //Person left the MS!!
+                            PameasNotificationTO pameasNotificationTO = new PameasNotificationTO();
+                            pameasNotificationTO.setType("PASSENGER_EXITING_MS");
+                            pameasNotificationTO.setMacAddress(location.getMacAddress());
+                            kafkaService.writePameasNotification(pameasNotificationTO);
+                        }
                     }
                 }
+
             }
 
-        }
 
-        if(person.isPresent()){
             PameasPerson existingPerson = person.get();
-            personService.addLocationToPerson(location, existingPerson);
-            kafkaService.saveLocation(minLocationTO);
-
-
-            SRAPLocationTO srapLocationTO = new SRAPLocationTO();
-            srapLocationTO.setId(location.getHashedMacAddress());
-            srapLocationTO.setPersonalinfo(existingPerson.getPersonalInfo());
-            this.kafkaService.writeSRAPLocation(srapLocationTO);
+            int geofenceHistSize = existingPerson.getLocationInfo().getGeofenceHistory().size();
+            if (geofenceHistSize == 0 ||
+                    (!existingPerson.getLocationInfo().getGeofenceHistory().get(geofenceHistSize-1).getGfName().equals(location.getGeofence().getGfName()))) {
+                personService.addLocationToPerson(location, existingPerson);
+                kafkaService.saveLocation(minLocationTO);
+                SRAPLocationTO srapLocationTO = new SRAPLocationTO();
+                srapLocationTO.setId(location.getHashedMacAddress());
+                srapLocationTO.setPersonalinfo(existingPerson.getPersonalInfo());
+                this.kafkaService.writeSRAPLocation(srapLocationTO);
+            }
 
 
         }
-
 
 
     }
